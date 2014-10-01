@@ -76,6 +76,7 @@ void usage(void)
    fprintf(stderr, "    -or s          : filename of output raw audio (generated speech)         [  N/A]\n");
    fprintf(stderr, "    -ow s          : filename of output wav audio (generated speech)         [  N/A]\n");
    fprintf(stderr, "    -ot s          : filename of output trace information                    [  N/A]\n");
+   fprintf(stderr, "    -qf            : filename of input log F0 (use instead of predicted)     [  N/A]\n");
    fprintf(stderr, "    -vp            : use phoneme alignment for duration                      [  N/A]\n");
    fprintf(stderr, "    -i  i f1 .. fi : enable interpolation & specify number(i),coefficient(f) [  N/A]\n");
    fprintf(stderr, "    -s  i          : sampling frequency                                      [ auto][   1--    ]\n");
@@ -112,6 +113,11 @@ int main(int argc, char **argv)
 
    /* input label file name */
    char *labfn = NULL;
+
+   /* input lf0 */
+   FILE *ilf0fp = NULL;
+   char *ilf0 = NULL;
+   int ilf0size = 0;
 
    /* output file pointers */
    FILE *durfp = NULL, *mgcfp = NULL, *lf0fp = NULL, *lpffp = NULL, *wavfp = NULL, *rawfp = NULL, *tracefp = NULL;
@@ -165,6 +171,29 @@ int main(int argc, char **argv)
                exit(1);
             }
             break;
+	 case 'q':
+	    switch (*(*argv + 2)) {
+	    case 'f':
+	       ilf0fp = fopen(*++argv, "rb");
+	       /* determine file size -- DEMITASSE: to check for off-by-one*/
+	       fseek(ilf0fp, 0, SEEK_END);
+	       ilf0size = ftell(ilf0fp);
+	       fseek(ilf0fp, 0, SEEK_SET);
+	       /* allocate and read */
+	       ilf0 = malloc(ilf0size);
+	       fread(ilf0, sizeof(char), ilf0size, ilf0fp);
+	       fclose(ilf0fp);
+	       /* DEMITASSE: set replacement ilf0 in engine? or make
+		  another synth function where ilf0 is passed -- the
+		  latter will cause less disruption... */
+	       break;
+	    default:
+               fprintf(stderr, "Error: Invalid option '-q%c'.\n", *(*argv + 2));
+               HTS_Engine_clear(&engine);
+               exit(1);
+	    }
+	    --argc;
+	    break;
          case 'o':
             switch (*(*argv + 2)) {
             case 'w':
@@ -283,11 +312,20 @@ int main(int argc, char **argv)
    }
 
    /* synthesize */
-   if (HTS_Engine_synthesize_from_fn(&engine, labfn) != TRUE) {
-      fprintf(stderr, "Error: waveform cannot be synthesized.\n");
-      HTS_Engine_clear(&engine);
-      exit(1);
-   }
+   if (ilf0 == NULL) {
+      if (HTS_Engine_synthesize_from_fn(&engine, labfn) != TRUE) {
+	 fprintf(stderr, "Error: waveform cannot be synthesized.\n");
+	 HTS_Engine_clear(&engine);
+	 exit(1);
+      }
+   } else {
+      if (HTS_Engine_synthesize_from_fn_with_ilf0(&engine, &ilf0, labfn) != TRUE) {
+	 fprintf(stderr, "Error: waveform cannot be synthesized.\n");
+	 HTS_Engine_clear(&engine);
+	 free(ilf0);
+	 exit(1);
+      }    
+   }  
 
    /* output */
    if (tracefp != NULL)
@@ -310,6 +348,8 @@ int main(int argc, char **argv)
 
    /* free memory */
    HTS_Engine_clear(&engine);
+   if (ilf0 != NULL)
+      free(ilf0);
 
    /* close files */
    if (durfp != NULL)
