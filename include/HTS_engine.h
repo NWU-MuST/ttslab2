@@ -426,8 +426,14 @@ double HTS_Engine_get_generated_speech(HTS_Engine * engine, size_t index);
 /* HTS_Engine_synthesize_from_fn: synthesize speech from file name */
 HTS_Boolean HTS_Engine_synthesize_from_fn(HTS_Engine * engine, const char *fn);
 
+/* HTS_Engine_synthesize_with_lf0: synthesize speech by replacing the generated lf0 with ilf0 before vocoding */
+HTS_Boolean HTS_Engine_synthesize_from_fn_with_lf0(HTS_Engine * engine, const char *fn, const double * ilf0, size_t ilf0_nframes);
+
 /* HTS_Engine_synthesize_from_strings: synthesize speech from string list */
 HTS_Boolean HTS_Engine_synthesize_from_strings(HTS_Engine * engine, char **lines, size_t num_lines);
+
+/* HTS_Engine_synthesize_from_strings_with_lf0: synthesize speech from string list by replacing the generated lf0 with ilf0 before vocoding */
+HTS_Boolean HTS_Engine_synthesize_from_strings_with_lf0(HTS_Engine * engine, char **lines, size_t num_lines, const double * ilf0, size_t ilf0_nframes);
 
 /* HTS_Engine_generate_state_sequence_from_fn: generate state sequence from file name (1st synthesis step) */
 HTS_Boolean HTS_Engine_generate_state_sequence_from_fn(HTS_Engine * engine, const char *fn);
@@ -440,6 +446,9 @@ HTS_Boolean HTS_Engine_generate_parameter_sequence(HTS_Engine * engine);
 
 /* HTS_Engine_generate_sample_sequence: generate sample sequence (3rd synthesis step) */
 HTS_Boolean HTS_Engine_generate_sample_sequence(HTS_Engine * engine);
+
+/* HTS_Engine_generate_sample_sequence_with_lf0: generate sample sequence (3rd synthesis step), replacing lf0 with ilf0 before vocoding*/
+HTS_Boolean HTS_Engine_generate_sample_sequence_with_lf0(HTS_Engine * engine, const double * ilf0, size_t ilf0_nframes);
 
 /* HTS_Engine_save_information: save trace information */
 void HTS_Engine_save_information(HTS_Engine * engine, FILE * fp);

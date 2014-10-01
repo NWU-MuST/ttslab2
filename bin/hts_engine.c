@@ -84,7 +84,7 @@ void usage(void)
    fprintf(stderr, "    -a  f          : all-pass constant                                       [ auto][ 0.0-- 1.0]\n");
    fprintf(stderr, "    -b  f          : postfiltering coefficient                               [  0.0][ 0.0-- 1.0]\n");
    fprintf(stderr, "    -r  f          : speech speed rate                                       [  1.0][ 0.0--    ]\n");
-   fprintf(stderr, "    -fm f          : additional half-tone                                    [  0.0][    --    ]\n");
+   fprintf(stderr, "    -fm f          : additional half-tone (not applied if using -qf)         [  0.0][    --    ]\n");
    fprintf(stderr, "    -u  f          : voiced/unvoiced threshold                               [  0.5][ 0.0-- 1.0]\n");
    fprintf(stderr, "    -jm f          : weight of GV for spectrum                               [  1.0][ 0.0--    ]\n");
    fprintf(stderr, "    -jf f          : weight of GV for log F0                                 [  1.0][ 0.0--    ]\n");
@@ -116,8 +116,8 @@ int main(int argc, char **argv)
 
    /* input lf0 */
    FILE *ilf0fp = NULL;
-   char *ilf0 = NULL;
-   int ilf0size = 0;
+   double *ilf0 = NULL;
+   size_t ilf0_nframes = 0;
 
    /* output file pointers */
    FILE *durfp = NULL, *mgcfp = NULL, *lf0fp = NULL, *lpffp = NULL, *wavfp = NULL, *rawfp = NULL, *tracefp = NULL;
@@ -175,17 +175,15 @@ int main(int argc, char **argv)
 	    switch (*(*argv + 2)) {
 	    case 'f':
 	       ilf0fp = fopen(*++argv, "rb");
-	       /* determine file size -- DEMITASSE: to check for off-by-one*/
+	       /* determine file size */
 	       fseek(ilf0fp, 0, SEEK_END);
-	       ilf0size = ftell(ilf0fp);
+	       ilf0_nframes = (size_t) (ftell(ilf0fp) / sizeof(double)); 
+	       fprintf(stderr, "Counted %d frames in ilf0 file.\n", ilf0_nframes); /* DEMITASSE: still to check for off-by-one */
 	       fseek(ilf0fp, 0, SEEK_SET);
 	       /* allocate and read */
-	       ilf0 = malloc(ilf0size);
-	       fread(ilf0, sizeof(char), ilf0size, ilf0fp);
+	       ilf0 = calloc(ilf0_nframes, sizeof(double));
+	       fread(ilf0, sizeof(double), ilf0_nframes, ilf0fp);
 	       fclose(ilf0fp);
-	       /* DEMITASSE: set replacement ilf0 in engine? or make
-		  another synth function where ilf0 is passed -- the
-		  latter will cause less disruption... */
 	       break;
 	    default:
                fprintf(stderr, "Error: Invalid option '-q%c'.\n", *(*argv + 2));
@@ -319,7 +317,7 @@ int main(int argc, char **argv)
 	 exit(1);
       }
    } else {
-      if (HTS_Engine_synthesize_from_fn_with_ilf0(&engine, &ilf0, labfn) != TRUE) {
+      if (HTS_Engine_synthesize_from_fn_with_lf0(&engine, labfn, &ilf0, ilf0_nframes) != TRUE) {
 	 fprintf(stderr, "Error: waveform cannot be synthesized.\n");
 	 HTS_Engine_clear(&engine);
 	 free(ilf0);
