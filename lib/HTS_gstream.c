@@ -209,7 +209,7 @@ HTS_Boolean HTS_GStreamSet_create_with_lf0(HTS_GStreamSet * gss, HTS_PStreamSet 
       undefined F0. Second index of "par" is the dimension -- F0 is
       one dimensional.*/
    for (j = 0; j < gss->total_frame; j++)
-      gss->gstream[1].par[j][0] = ilf0[j]
+      gss->gstream[1].par[j][0] = ilf0[j];
 
    /* check */
    if (gss->nstream != 2 && gss->nstream != 3) {

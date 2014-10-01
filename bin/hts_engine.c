@@ -118,6 +118,7 @@ int main(int argc, char **argv)
    FILE *ilf0fp = NULL;
    double *ilf0 = NULL;
    size_t ilf0_nframes = 0;
+   size_t ilf0_read_nframes = 0;
 
    /* output file pointers */
    FILE *durfp = NULL, *mgcfp = NULL, *lf0fp = NULL, *lpffp = NULL, *wavfp = NULL, *rawfp = NULL, *tracefp = NULL;
@@ -178,12 +179,17 @@ int main(int argc, char **argv)
 	       /* determine file size */
 	       fseek(ilf0fp, 0, SEEK_END);
 	       ilf0_nframes = (size_t) (ftell(ilf0fp) / sizeof(double)); 
-	       fprintf(stderr, "Counted %d frames in ilf0 file.\n", ilf0_nframes); /* DEMITASSE: still to check for off-by-one */
+	       fprintf(stderr, "Counted %lu frames in ilf0 file.\n", (unsigned long) ilf0_nframes); /* DEMITASSE: still to check for off-by-one */
 	       fseek(ilf0fp, 0, SEEK_SET);
 	       /* allocate and read */
 	       ilf0 = calloc(ilf0_nframes, sizeof(double));
-	       fread(ilf0, sizeof(double), ilf0_nframes, ilf0fp);
+	       ilf0_read_nframes = fread(ilf0, sizeof(double), ilf0_nframes, ilf0fp);
 	       fclose(ilf0fp);
+	       if (ilf0_read_nframes != ilf0_nframes) {
+		  fprintf(stderr, "Error reading lf0 from file (-qf).");
+		  HTS_Engine_clear(&engine);
+		  exit(1);
+	       }
 	       break;
 	    default:
                fprintf(stderr, "Error: Invalid option '-q%c'.\n", *(*argv + 2));
@@ -317,7 +323,7 @@ int main(int argc, char **argv)
 	 exit(1);
       }
    } else {
-      if (HTS_Engine_synthesize_from_fn_with_lf0(&engine, labfn, &ilf0, ilf0_nframes) != TRUE) {
+      if (HTS_Engine_synthesize_from_fn_with_lf0(&engine, labfn, ilf0, ilf0_nframes) != TRUE) {
 	 fprintf(stderr, "Error: waveform cannot be synthesized.\n");
 	 HTS_Engine_clear(&engine);
 	 free(ilf0);
