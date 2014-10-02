@@ -10,13 +10,13 @@ __email__ = "dvn.demitasse@gmail.com"
 import re
 from .. phoneset import Phoneset
 
-class LwaziPediPhoneset(Phoneset):
+class LwaziNsothoPhoneset(Phoneset):
     """ Developed for the Lwazi project...
     """
     def __init__(self):
         #Phoneset.__init__(self)
 
-        self.features = {"name": "Lwazi Pedi Phoneset",
+        self.features = {"name": "Lwazi Nsotho Phoneset",
                          "silence_phone": "pau",
                          "closure_phone": "pau_cl"
                          }
@@ -124,7 +124,7 @@ class LwaziPediPhoneset(Phoneset):
 
 
     def syllabify(self, phonelist):
-        """ Basic Pedi syllabification, based on the
+        """ Basic Nsotho syllabification, based on the
             syllabification scheme devised by Etienne Barnard for
             isiZulu (Nguni language).
         """
