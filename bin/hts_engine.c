@@ -101,7 +101,7 @@ void usage(void)
 
 int main(int argc, char **argv)
 {
-   int i;
+   int i, j;
    double f;
 
    /* hts_engine API */
@@ -117,6 +117,7 @@ int main(int argc, char **argv)
    /* input lf0 */
    FILE *ilf0fp = NULL;
    double *ilf0 = NULL;
+   float *ilf0buffer = NULL; /* just for reading from file */
    size_t ilf0_nframes = 0;
    size_t ilf0_read_nframes = 0;
 
@@ -178,18 +179,24 @@ int main(int argc, char **argv)
 	       ilf0fp = fopen(*++argv, "rb");
 	       /* determine file size */
 	       fseek(ilf0fp, 0, SEEK_END);
-	       ilf0_nframes = (size_t) (ftell(ilf0fp) / sizeof(double)); 
-	       fprintf(stderr, "Counted %lu frames in ilf0 file.\n", (unsigned long) ilf0_nframes); /* DEMITASSE: still to check for off-by-one */
+	       ilf0_nframes = (size_t) (ftell(ilf0fp) / sizeof(float)); 
+	       /* fprintf(stderr, "Counted %lu frames in ilf0 file.\n", (unsigned long)ilf0_nframes); */
 	       fseek(ilf0fp, 0, SEEK_SET);
 	       /* allocate and read */
-	       ilf0 = calloc(ilf0_nframes, sizeof(double));
-	       ilf0_read_nframes = fread(ilf0, sizeof(double), ilf0_nframes, ilf0fp);
+	       ilf0buffer = calloc(ilf0_nframes, sizeof(float));
+	       ilf0_read_nframes = fread(ilf0buffer, sizeof(float), ilf0_nframes, ilf0fp);
 	       fclose(ilf0fp);
 	       if (ilf0_read_nframes != ilf0_nframes) {
 		  fprintf(stderr, "Error reading lf0 from file (-qf).");
 		  HTS_Engine_clear(&engine);
+		  free(ilf0buffer);
 		  exit(1);
 	       }
+	       /* cast to double */
+	       ilf0 = calloc(ilf0_nframes, sizeof(double));
+	       for (j = 0; j < ilf0_read_nframes; j++)
+		  ilf0[j] = (double)ilf0buffer[j];
+	       free(ilf0buffer);
 	       break;
 	    default:
                fprintf(stderr, "Error: Invalid option '-q%c'.\n", *(*argv + 2));
