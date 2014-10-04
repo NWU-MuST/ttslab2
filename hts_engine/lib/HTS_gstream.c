@@ -194,22 +194,25 @@ HTS_Boolean HTS_GStreamSet_create_with_lf0(HTS_GStreamSet * gss, HTS_PStreamSet 
       }
    }
 
-   /* DEMITASSE: Replace lf0 here before vocoding, assume lf0 is in the second stream (index 1)*/
-   /* check */
-   if (gss->total_frame != ilf0_nframes) {
-      HTS_error(1, "HTS_GStreamSet_create_with_lf0: The number of frames from input lf0 do not equal the number of frames generated for other parameter streams\n");
-      HTS_GStreamSet_clear(gss);
-      return FALSE;
+   /* DEMITASSE: Replace lf0 here before vocoding (if not NULL),
+      assume lf0 is in the second stream (index 1)*/
+   if (ilf0 != NULL) {
+      /* check */
+      if (gss->total_frame != ilf0_nframes) {
+	 HTS_error(1, "HTS_GStreamSet_create_with_lf0: The number of frames from input lf0 do not equal the number of frames generated for other parameter streams\n");
+	 HTS_GStreamSet_clear(gss);
+	 return FALSE;
+      }
+      /* copy to "gss" -- I don't have to bother updating the MSD
+	 flags in "pss" as we don't use this in the vocoder. The data
+	 is copied here, which is not the most efficient but for the
+	 sake of simplicity. We just do a simple copy, because
+	 HTS_NODATA == LZERO which is what we expect "ilf0" to be in
+	 the case of undefined F0. Second index of "par" is the
+	 dimension -- F0 is one dimensional.*/
+      for (j = 0; j < gss->total_frame; j++)
+	 gss->gstream[1].par[j][0] = ilf0[j];
    }
-   /* copy to "gss" -- I don't have to bother updating the MSD flags
-      in "pss" as we don't use this in the vocoder. The data is copied
-      here, which is not the most efficient but for the sake of
-      simplicity. We just do a simple copy, because HTS_NODATA ==
-      LZERO which is what we expect "ilf0" to be in the case of
-      undefined F0. Second index of "par" is the dimension -- F0 is
-      one dimensional.*/
-   for (j = 0; j < gss->total_frame; j++)
-      gss->gstream[1].par[j][0] = ilf0[j];
 
    /* check */
    if (gss->nstream != 2 && gss->nstream != 3) {

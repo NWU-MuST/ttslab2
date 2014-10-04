@@ -323,20 +323,13 @@ int main(int argc, char **argv)
    }
 
    /* synthesize */
-   if (ilf0 == NULL) {
-      if (HTS_Engine_synthesize_from_fn(&engine, labfn) != TRUE) {
-	 fprintf(stderr, "Error: waveform cannot be synthesized.\n");
-	 HTS_Engine_clear(&engine);
-	 exit(1);
-      }
-   } else {
-      if (HTS_Engine_synthesize_from_fn_with_lf0(&engine, labfn, ilf0, ilf0_nframes) != TRUE) {
-	 fprintf(stderr, "Error: waveform cannot be synthesized.\n");
-	 HTS_Engine_clear(&engine);
+   if (HTS_Engine_synthesize_from_fn_with_lf0(&engine, labfn, ilf0, ilf0_nframes) != TRUE) {
+      fprintf(stderr, "Error: waveform cannot be synthesized.\n");
+      HTS_Engine_clear(&engine);
+      if (ilf0 != NULL)
 	 free(ilf0);
-	 exit(1);
-      }    
-   }  
+      exit(1);
+   }
 
    /* output */
    if (tracefp != NULL)
