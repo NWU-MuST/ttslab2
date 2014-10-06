@@ -542,12 +542,12 @@ typedef struct _HTS_Vocoder_ME {
    double  *hn;             /* noise shaping filter, size of the filter order            */
    size_t  num_filters;     /* number of filters                                         */
    size_t  filter_order;    /* filter order                                              */
-   double **h;              /* me filter coefficients                                    */
+   const double **h;        /* me filter coefficients                                    */
 } HTS_Vocoder_ME;
 
 /* HTS_Vocoder_initialize_me: initialize vocoder (mixed excitation) */
 void HTS_Vocoder_initialize_me(HTS_Vocoder_ME * v_me, size_t m, size_t stage, HTS_Boolean use_log_gain, size_t rate, size_t fperiod,
-			       size_t num_filters, size_t filter_order, double **me_filter,
+			       size_t num_filters, size_t filter_order, const double **me_filter,
 			       double *xp_sig, double *xn_sig, double *hp, double *hn);
 
 /* HTS_Vocoder_synthesize_me: mixed excitation and MLSA/MGLSA filster based waveform synthesis */

@@ -182,7 +182,7 @@ HTS_Boolean HTS_GStreamSet_create(HTS_GStreamSet * gss, HTS_PStreamSet * pss, si
  * Standard Form Digital Filter
  * latice digital filter
  */
-static double dfs_me(double x, double *a, int m, double *b, int n, double *buf, int *bufp)
+static double dfs_me(double x, double *a, int m, const double *b, int n, double *buf, int *bufp)
 {
    double y = 0.0;
    int i, p;
@@ -228,6 +228,10 @@ HTS_Boolean HTS_GStreamSet_create_me_with_lf0(HTS_GStreamSet * gss, HTS_PStreamS
    size_t i, j, k;
    size_t msd_frame;
    HTS_Vocoder_ME v_me;
+   HTS_Vocoder v;
+
+   /* Connect original vocoder pointer in ME vocoder */
+   v_me.v = &v;
 
    /* check */
    if (gss->gstream || gss->gspeech) {

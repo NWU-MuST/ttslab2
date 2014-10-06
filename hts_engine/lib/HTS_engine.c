@@ -850,7 +850,7 @@ void HTS_Engine_clear(HTS_Engine * engine)
 void HTS_Engine_load_me_filter_from_fn(char *me_filter_fn, double ***me_filter, size_t *me_num_filters, size_t *me_filter_order)
 {
    int i, j;
-   FILE *me_fp;
+   HTS_File *me_fp;
    char buff[ME_MAX_TOKEN_LENGTH];
 
    me_fp = HTS_fopen_from_fn(me_filter_fn, "r");
@@ -888,7 +888,7 @@ void HTS_Engine_load_me_filter_from_fn(char *me_filter_fn, double ***me_filter, 
       }
    }
 	
-   fclose(me_fp);
+   HTS_fclose(me_fp);
 }
 
 
@@ -896,7 +896,7 @@ void HTS_Engine_load_me_filter_from_fn(char *me_filter_fn, double ***me_filter, 
 void HTS_Engine_load_pd_filter_from_fn(char *pd_filter_fn, double **pd_filter, size_t *pd_filter_order)
 {
    int i;
-   FILE *pd_fp;
+   HTS_File *pd_fp;
    char buff[ME_MAX_TOKEN_LENGTH];
    
    pd_fp = HTS_fopen_from_fn(pd_filter_fn, "r");
@@ -917,11 +917,10 @@ void HTS_Engine_load_pd_filter_from_fn(char *pd_filter_fn, double **pd_filter, s
       }
 
       (*pd_filter)[i] = atof(buff);
-
       i++;
    }
 
-   fclose(pd_fp);
+   HTS_fclose(pd_fp);
 }
 
 HTS_ENGINE_C_END;

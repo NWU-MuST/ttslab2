@@ -69,6 +69,8 @@ void usage(void)
    fprintf(stderr, "    hts_engine [ options ] [ infile ]\n");
    fprintf(stderr, "  options:                                                                   [  def][ min-- max]\n");
    fprintf(stderr, "    -m  htsvoice   : HTS voice files                                         [  N/A]\n");
+   fprintf(stderr, "    -xm s          : filename of mixed excitation bandpass filters           [  N/A]\n");
+   fprintf(stderr, "    -xp s          : filename of pulse dispersion filter                     [  N/A]\n");
    fprintf(stderr, "    -od s          : filename of output label with duration                  [  N/A]\n");
    fprintf(stderr, "    -om s          : filename of output spectrum                             [  N/A]\n");
    fprintf(stderr, "    -of s          : filename of output log F0                               [  N/A]\n");
@@ -372,7 +374,7 @@ int main(int argc, char **argv)
    hn = calloc(me_filter_order, sizeof(double));
 
    /* synthesize */
-   if (HTS_Engine_synthesize_me_with_lf0_from_fn(&engine, labfn, me_num_filters, me_filter_order, me_filter, pd_filter_order, pd_filter, xp_sig, xn_sig, hp, hn, ilf0, ilf0_nframes) != TRUE) {
+   if (HTS_Engine_synthesize_me_with_lf0_from_fn(&engine, labfn, me_num_filters, me_filter_order, (const double **)me_filter, pd_filter_order, (const double *)pd_filter, xp_sig, xn_sig, hp, hn, (const double *)ilf0, ilf0_nframes) != TRUE) {
       fprintf(stderr, "Error: waveform cannot be synthesized.\n");
       HTS_Engine_clear(&engine);
       if (ilf0 != NULL)
