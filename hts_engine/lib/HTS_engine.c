@@ -41,6 +41,35 @@
 /* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE           */
 /* POSSIBILITY OF SUCH DAMAGE.                                       */
 /* ----------------------------------------------------------------- */
+/*********************************************************************************/
+/* Copyright (c) 2012 The Department of Arts and Culture,                        */
+/* The Government of the Republic of South Africa.                               */
+/*                                                                               */
+/* Contributors:  Meraka Institute, CSIR, South Africa.                          */
+/*                                                                               */
+/* Permission is hereby granted, free of charge, to any person obtaining a copy  */
+/* of this software and associated documentation files (the "Software"), to deal */
+/* in the Software without restriction, including without limitation the rights  */
+/* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell     */
+/* copies of the Software, and to permit persons to whom the Software is         */
+/* furnished to do so, subject to the following conditions:                      */
+/* The above copyright notice and this permission notice shall be included in    */
+/* all copies or substantial portions of the Software.                           */
+/*                                                                               */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    */
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE   */
+/* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        */
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, */
+/* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN     */
+/* THE SOFTWARE.                                                                 */
+/*                                                                               */
+/*********************************************************************************/
+/* AUTHOR  : Aby Louw                                                            */
+/* DATE    : 14 May 2012                                                         */
+/*********************************************************************************/
+/* Added functions for mixed excitation                                          */
+/*********************************************************************************/
 
 #ifndef HTS_ENGINE_C
 #define HTS_ENGINE_C
@@ -476,10 +505,10 @@ HTS_Boolean HTS_Engine_generate_sample_sequence(HTS_Engine * engine)
    return HTS_GStreamSet_create(&engine->gss, &engine->pss, engine->condition.stage, engine->condition.use_log_gain, engine->condition.sampling_frequency, engine->condition.fperiod, engine->condition.alpha, engine->condition.beta, &engine->condition.stop, engine->condition.volume, engine->condition.audio_buff_size > 0 ? &engine->audio : NULL);
 }
 
-/* HTS_Engine_generate_sample_sequence_with_lf0: generate sample sequence (3rd synthesis step), replacing lf0 with ilf0 before vocoding*/
-HTS_Boolean HTS_Engine_generate_sample_sequence_with_lf0(HTS_Engine * engine, const double *ilf0, size_t ilf0_nframes)
+/* HTS_Engine_generate_sample_sequence_me_with_lf0: generate sample sequence (3rd synthesis step), replacing lf0 with ilf0 before vocoding*/
+HTS_Boolean HTS_Engine_generate_sample_sequence_me_with_lf0(HTS_Engine * engine, size_t me_num_filters, size_t me_filter_order, const double ** me_filter, size_t pd_filter_order, const double * pd_filter, double * xp_sig, double * xn_sig, double * hp, double * hn, const double *ilf0, size_t ilf0_nframes)
 {
-   return HTS_GStreamSet_create_with_lf0(&engine->gss, &engine->pss, engine->condition.stage, engine->condition.use_log_gain, engine->condition.sampling_frequency, engine->condition.fperiod, engine->condition.alpha, engine->condition.beta, &engine->condition.stop, engine->condition.volume, engine->condition.audio_buff_size > 0 ? &engine->audio : NULL, ilf0, ilf0_nframes);
+   return HTS_GStreamSet_create_me_with_lf0(&engine->gss, &engine->pss, engine->condition.stage, engine->condition.use_log_gain, engine->condition.sampling_frequency, engine->condition.fperiod, engine->condition.alpha, engine->condition.beta, &engine->condition.stop, engine->condition.volume, engine->condition.audio_buff_size > 0 ? &engine->audio : NULL, me_num_filters, me_filter_order, me_filter, pd_filter_order, pd_filter, xp_sig, xn_sig, hp, hn, ilf0, ilf0_nframes);
 }
 
 /* HTS_Engine_synthesize: synthesize speech */
@@ -500,8 +529,8 @@ static HTS_Boolean HTS_Engine_synthesize(HTS_Engine * engine)
    return TRUE;
 }
 
-/* HTS_Engine_synthesize_with_lf0: synthesize speech by replacing the generated lf0 with ilf0 before vocoding */
-static HTS_Boolean HTS_Engine_synthesize_with_lf0(HTS_Engine * engine, const double *ilf0, size_t ilf0_nframes)
+/* HTS_Engine_synthesize_me_with_lf0: synthesize speech by replacing the generated lf0 with ilf0 before vocoding */
+static HTS_Boolean HTS_Engine_synthesize_me_with_lf0(HTS_Engine * engine, size_t me_num_filters, size_t me_filter_order, const double ** me_filter, size_t pd_filter_order, const double * pd_filter, double * xp_sig, double * xn_sig, double * hp, double * hn, const double *ilf0, size_t ilf0_nframes)
 {
    if (HTS_Engine_generate_state_sequence(engine) != TRUE) {
       HTS_Engine_refresh(engine);
@@ -511,7 +540,7 @@ static HTS_Boolean HTS_Engine_synthesize_with_lf0(HTS_Engine * engine, const dou
       HTS_Engine_refresh(engine);
       return FALSE;
    }
-   if (HTS_Engine_generate_sample_sequence_with_lf0(engine, ilf0, ilf0_nframes) != TRUE) {
+   if (HTS_Engine_generate_sample_sequence_me_with_lf0(engine, me_num_filters, me_filter_order, me_filter, pd_filter_order, pd_filter, xp_sig, xn_sig, hp, hn, ilf0, ilf0_nframes) != TRUE) {
       HTS_Engine_refresh(engine);
       return FALSE;
    }
@@ -526,12 +555,12 @@ HTS_Boolean HTS_Engine_synthesize_from_fn(HTS_Engine * engine, const char *fn)
    return HTS_Engine_synthesize(engine);
 }
 
-/* HTS_Engine_synthesize_from_fn_with_lf0: synthesize speech from file name with given lf0 */
-HTS_Boolean HTS_Engine_synthesize_from_fn_with_lf0(HTS_Engine * engine, const char *fn, const double *ilf0, size_t ilf0_nframes)
+/* HTS_Engine_synthesize_me_with_lf0_from_fn: synthesize speech from file name with given lf0 */
+HTS_Boolean HTS_Engine_synthesize_me_with_lf0_from_fn(HTS_Engine * engine, const char *fn, size_t me_num_filters, size_t me_filter_order, const double ** me_filter, size_t pd_filter_order, const double * pd_filter, double * xp_sig, double * xn_sig, double * hp, double * hn, const double *ilf0, size_t ilf0_nframes)
 {
    HTS_Engine_refresh(engine);
    HTS_Label_load_from_fn(&engine->label, engine->condition.sampling_frequency, engine->condition.fperiod, fn);
-   return HTS_Engine_synthesize_with_lf0(engine, ilf0, ilf0_nframes);
+   return HTS_Engine_synthesize_me_with_lf0(engine, me_num_filters, me_filter_order, me_filter, pd_filter_order, pd_filter, xp_sig, xn_sig, hp, hn, ilf0, ilf0_nframes);
 }
 
 /* HTS_Engine_synthesize_from_strings: synthesize speech from strings */
@@ -542,12 +571,12 @@ HTS_Boolean HTS_Engine_synthesize_from_strings(HTS_Engine * engine, char **lines
    return HTS_Engine_synthesize(engine);
 }
 
-/* HTS_Engine_synthesize_from_strings_with_lf0: synthesize speech from strings with given lf0 */
-HTS_Boolean HTS_Engine_synthesize_from_strings_with_lf0(HTS_Engine * engine, char **lines, size_t num_lines, const double * ilf0, size_t ilf0_nframes)
+/* HTS_Engine_synthesize_me_with_lf0_from_strings: synthesize speech from strings with given lf0 */
+HTS_Boolean HTS_Engine_synthesize_me_with_lf0_from_strings(HTS_Engine * engine, char **lines, size_t num_lines, size_t me_num_filters, size_t me_filter_order, const double ** me_filter, size_t pd_filter_order, const double * pd_filter, const double * ilf0, size_t ilf0_nframes)
 {
    HTS_Engine_refresh(engine);
    HTS_Label_load_from_strings(&engine->label, engine->condition.sampling_frequency, engine->condition.fperiod, lines, num_lines);
-   return HTS_Engine_synthesize_with_lf0(engine, ilf0, ilf0_nframes);
+   return HTS_Engine_synthesize_me_with_lf0(engine, me_num_filters, me_filter_order, me_filter, pd_filter_order, pd_filter, ilf0, ilf0_nframes);
 }
 
 
@@ -814,6 +843,86 @@ void HTS_Engine_clear(HTS_Engine * engine)
    HTS_ModelSet_clear(&engine->ms);
    HTS_Audio_clear(&engine->audio);
    HTS_Engine_initialize(engine);
+}
+
+/* DEMITASSE: In future make space for these filters in the HTS_Engine struct and API? */
+#define ME_MAX_TOKEN_LENGTH 100
+/* HTS_Engine_load_me_filter_from_fn: load mixed excitation filter from file name */
+void HTS_Engine_load_me_filter_from_fn(char *me_filter_fn, double ***me_filter, size_t *me_num_filters, size_t *me_filter_order)
+{
+   int i, j;
+   FILE *me_fp;
+   char buff[ME_MAX_TOKEN_LENGTH];
+
+   me_fp = HTS_fopen_from_fn(me_filter_fn, "r");
+
+   HTS_get_token_from_fp(me_fp, buff);
+   if (!isgraph((int) buff[0]))
+      HTS_error(1, "HTS_Engine_load_me_filter_from_fn: first token of file must be the number of filters.\n");
+
+   (*me_num_filters) = (size_t)atoi(buff);
+   (*me_filter) = (double**)HTS_calloc((*me_num_filters), sizeof(double*));
+
+   HTS_get_token_from_fp(me_fp, buff);
+   if (!isgraph((int) buff[0]))
+      HTS_error(1, "HTS_Engine_load_me_filter_from_fn: second token of file must be the filter order.\n");
+
+   (*me_filter_order) = (size_t)atoi(buff);
+   for (i = 0; i < (*me_num_filters); i++)
+      (*me_filter)[i] = (double*)HTS_calloc((*me_filter_order), sizeof(double));
+
+   i = 0;
+   j = 0;
+   while (HTS_get_token_from_fp(me_fp, buff)) {
+      if (!isgraph((int) buff[0])) {
+	 if ((i != (*me_num_filters)) && (j != 0))
+	    HTS_error(1, "HTS_Engine_load_me_filter_from_fn: read token is not a graph, file format error.\n");
+	 break;
+      }
+
+      (*me_filter)[i][j] = atof(buff);
+	   
+      j++;
+      if (j == (*me_filter_order)) {
+	 i++;
+	 j = 0;
+      }
+   }
+	
+   fclose(me_fp);
+}
+
+
+/* HTS_Engine_load_pd_filter_from_fn: load pulse dispersion filter from file name */
+void HTS_Engine_load_pd_filter_from_fn(char *pd_filter_fn, double **pd_filter, size_t *pd_filter_order)
+{
+   int i;
+   FILE *pd_fp;
+   char buff[ME_MAX_TOKEN_LENGTH];
+   
+   pd_fp = HTS_fopen_from_fn(pd_filter_fn, "r");
+   
+   HTS_get_token_from_fp(pd_fp, buff);
+   if (!isgraph((int) buff[0]))
+      HTS_error(1, "HTS_Engine_load_pd_filter_from_fn: first token of file must be the filter order.\n");
+
+   (*pd_filter_order) = (size_t)atoi(buff);
+   (*pd_filter) = (double*)HTS_calloc((*pd_filter_order), sizeof(double));
+
+   i = 0;
+   while (HTS_get_token_from_fp(pd_fp, buff)) {
+      if (!isgraph((int) buff[0])) {
+	 if (i != (*pd_filter_order))
+	    HTS_error(1, "HTS_Engine_load_pd_filter_from_fn: read token is not a graph, file format error.\n");
+	 break;
+      }
+
+      (*pd_filter)[i] = atof(buff);
+
+      i++;
+   }
+
+   fclose(pd_fp);
 }
 
 HTS_ENGINE_C_END;

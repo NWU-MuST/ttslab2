@@ -41,6 +41,35 @@
 /* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE           */
 /* POSSIBILITY OF SUCH DAMAGE.                                       */
 /* ----------------------------------------------------------------- */
+/*********************************************************************************/
+/* Copyright (c) 2012 The Department of Arts and Culture,                        */
+/* The Government of the Republic of South Africa.                               */
+/*                                                                               */
+/* Contributors:  Meraka Institute, CSIR, South Africa.                          */
+/*                                                                               */
+/* Permission is hereby granted, free of charge, to any person obtaining a copy  */
+/* of this software and associated documentation files (the "Software"), to deal */
+/* in the Software without restriction, including without limitation the rights  */
+/* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell     */
+/* copies of the Software, and to permit persons to whom the Software is         */
+/* furnished to do so, subject to the following conditions:                      */
+/* The above copyright notice and this permission notice shall be included in    */
+/* all copies or substantial portions of the Software.                           */
+/*                                                                               */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    */
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE   */
+/* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        */
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, */
+/* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN     */
+/* THE SOFTWARE.                                                                 */
+/*                                                                               */
+/*********************************************************************************/
+/* AUTHOR  : Aby Louw                                                            */
+/* DATE    : 14 May 2012                                                         */
+/*********************************************************************************/
+/* Added mixed excitation, function HTS_Vocoder_synthesize_me                    */
+/*********************************************************************************/
 
 #ifndef HTS_VOCODER_C
 #define HTS_VOCODER_C
@@ -862,8 +891,40 @@ void HTS_Vocoder_initialize(HTS_Vocoder * v, size_t m, size_t stage, HTS_Boolean
    }
 }
 
-/* HTS_Vocoder_synthesize: pulse/noise excitation and MLSA/MGLSA filster based waveform synthesis */
-void HTS_Vocoder_synthesize(HTS_Vocoder * v, size_t m, double lf0, double *spectrum, size_t nlpf, double *lpf, double alpha, double beta, double volume, double *rawdata, HTS_Audio * audio)
+/* HTS_Vocoder_initialize_me: initialize vocoder (mixed excitation) */
+void HTS_Vocoder_initialize_me(HTS_Vocoder_ME * v_me, size_t m, size_t stage, HTS_Boolean use_log_gain, size_t rate, size_t fperiod,
+			       size_t num_filters, size_t filter_order, double **me_filter,
+			       double *xp_sig, double *xn_sig, double *hp, double *hn)
+{
+   int i;
+
+   /* DEMITASSE: Initialise original vocoder structure -- we don't however implement synthesis using LSP */
+   HTS_Vocoder_initialize(v_me->v, m, stage, use_log_gain, rate, fperiod);
+
+   /* initialize mixed excitation variables */
+   v_me->num_filters = num_filters;
+   v_me->filter_order = filter_order;
+   v_me->xp_sig = xp_sig;
+   v_me->xn_sig = xn_sig;
+
+   /* initialise xp_sig and xn_sig */
+   for(i = 0; i < v_me->filter_order; i++) {
+      v_me->xp_sig[i] = 0.0;
+      v_me->xn_sig[i] = 0.0;
+   }
+
+   /* allocate memory for pulse and noise shaping filters */
+   v_me->hp = hp;
+   v_me->hn = hn;
+
+   /* get filter coefs */
+   v_me->h = me_filter;
+}
+
+/* HTS_Vocoder_synthesize: pulse/noise excitation and MLSA/MGLSA filter based waveform synthesis */
+void HTS_Vocoder_synthesize(HTS_Vocoder * v, size_t m, double lf0,
+			    double *spectrum, size_t nlpf, double *lpf, double alpha,
+			    double beta, double volume, double *rawdata, HTS_Audio * audio)
 {
    double x;
    int i, j;
@@ -949,6 +1010,117 @@ void HTS_Vocoder_synthesize(HTS_Vocoder * v, size_t m, double lf0, double *spect
    HTS_movem(v->cc, v->c, m + 1);
 }
 
+
+/* HTS_Vocoder_synthesize_me: mixed excitation and MLSA/MGLSA filster based waveform synthesis */
+void HTS_Vocoder_synthesize_me(HTS_Vocoder_ME * v_me, size_t m, double lf0,
+			       double *spectrum, double *strengths, double alpha,
+			       double beta, double volume, double *rawdata, HTS_Audio * audio)
+{
+   double x;
+   int i, j, k;
+   short xs;
+   int rawidx = 0;
+   double p;
+   HTS_Vocoder *v = v_me->v; /* access to original HTS_Vocoder structure */
+   double xpulse;
+   double xnoise;
+   double fxpulse;
+   double fxnoise;
+
+   /* Copy in str's and build pulse and noise shaping filter for this frame */
+   for (i = 0; i < v_me->filter_order; i++) {
+      v_me->hp[i] = v_me->hn[i] = 0.0;
+      for (j = 0; j < v_me->num_filters; j++) {
+	 v_me->hp[i] += strengths[j] * v_me->h[j][i];
+	 v_me->hn[i] += (1 - strengths[j]) * v_me->h[j][i];
+      }
+   }
+
+   /* lf0 -> pitch */
+   if (lf0 == LZERO)
+      p = 0.0;
+   else
+      p = v->rate / exp(lf0);
+
+   /* first time */
+   if (v->is_first == TRUE) {
+      HTS_Vocoder_initialize_excitation(v, p, 0);
+      /* for MCP */
+      HTS_mc2b(spectrum, v->c, m, alpha);
+      v->is_first = FALSE;
+   }
+
+   HTS_Vocoder_start_excitation(v, p);
+   HTS_Vocoder_postfilter_mcp(v, spectrum, m, alpha, beta);
+   HTS_mc2b(spectrum, v->cc, m, alpha);
+   for (i = 0; i <= m; i++)
+      v->cinc[i] = (v->cc[i] - v->c[i]) / v->fprd;
+
+   /* following adapted from HTS_Vocoder_get_excitation: */
+   for (j = 0; j < v->fprd; j++) {
+      if (v->pitch_of_curr_point == 0.0) {
+         x = HTS_white_noise(v);
+	 /* MIXED EXCITATION: */
+	 xnoise = x;
+	 xpulse = 0.0;	 
+      } else {
+         v->pitch_counter += 1.0;
+         if (v->pitch_counter >= v->pitch_of_curr_point) {
+            x = sqrt(v->pitch_of_curr_point);
+            v->pitch_counter -= v->pitch_of_curr_point;
+         } else {
+            x = 0.0;
+         }
+         v->pitch_of_curr_point += v->pitch_inc_per_point;
+	 /* MIXED EXCITATION: */
+	 xpulse = x;
+	 xnoise = HTS_mseq(v);  /* ABY: plus or minus 1 */	 
+      }
+
+      /* MIXED EXCITATION: */
+      /* The real work -- apply shaping filters to pulse and noise */
+      fxpulse = fxnoise = 0.0;
+      for (k = v_me->filter_order - 1; k > 0; k--) {
+	 fxpulse += v_me->hp[k] * v_me->xp_sig[k];
+	 fxnoise += v_me->hn[k] * v_me->xn_sig[k];
+	 
+	 v_me->xp_sig[k] = v_me->xp_sig[k-1];
+	 v_me->xn_sig[k] = v_me->xn_sig[k-1];
+      }
+      
+      fxpulse += v_me->hp[0] * xpulse;
+      fxnoise += v_me->hn[0] * xnoise;
+      v_me->xp_sig[0] = xpulse;
+      v_me->xn_sig[0] = xnoise;
+      
+      x = fxpulse + fxnoise; /* excitation is pulse plus noise */
+      
+      /* if (x != 0.0) */
+      x *= exp(v->c[0]);
+      x = HTS_mlsadf(x, v->c, m, alpha, PADEORDER, v->d1);
+      
+      x *= volume;
+      
+      /* output */
+      if (rawdata)
+	 rawdata[rawidx++] = x;
+      if (audio) {
+	 if (x > 32767.0)
+	    xs = 32767;
+	 else if (x < -32768.0)
+	    xs = -32768;
+	 else
+	    xs = (short) x;
+	 HTS_Audio_write(audio, xs);
+      }
+      for (i = 0; i <= m; i++)
+	 v->c[i] += v->cinc[i];
+   }
+   
+   HTS_Vocoder_end_excitation(v, p);
+   HTS_movem(v->cc, v->c, m + 1);
+}
+
 /* HTS_Vocoder_clear: clear vocoder */
 void HTS_Vocoder_clear(HTS_Vocoder * v)
 {
@@ -989,6 +1161,23 @@ void HTS_Vocoder_clear(HTS_Vocoder * v)
          HTS_free(v->excite_ring_buff);
          v->excite_ring_buff = NULL;
       }
+   }
+}
+
+/* HTS_Vocoder_clear_me: clear vocoder (mixed excitation) */
+void HTS_Vocoder_clear_me(HTS_Vocoder_ME * v_me)
+{
+   if (v_me != NULL) {
+      /* clear original structure */
+      HTS_Vocoder_clear(v_me->v);
+      /* clear additional fields */
+      v_me->num_filters = 0;
+      v_me->filter_order = 0;
+      v_me->xp_sig = NULL;
+      v_me->xn_sig = NULL;
+      v_me->hp = NULL;
+      v_me->hn = NULL;
+      v_me->h = NULL;
    }
 }
 

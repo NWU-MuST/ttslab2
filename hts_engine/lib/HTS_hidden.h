@@ -41,6 +41,35 @@
 /* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE           */
 /* POSSIBILITY OF SUCH DAMAGE.                                       */
 /* ----------------------------------------------------------------- */
+/*********************************************************************************/
+/* Copyright (c) 2012 The Department of Arts and Culture,                        */
+/* The Government of the Republic of South Africa.                               */
+/*                                                                               */
+/* Contributors:  Meraka Institute, CSIR, South Africa.                          */
+/*                                                                               */
+/* Permission is hereby granted, free of charge, to any person obtaining a copy  */
+/* of this software and associated documentation files (the "Software"), to deal */
+/* in the Software without restriction, including without limitation the rights  */
+/* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell     */
+/* copies of the Software, and to permit persons to whom the Software is         */
+/* furnished to do so, subject to the following conditions:                      */
+/* The above copyright notice and this permission notice shall be included in    */
+/* all copies or substantial portions of the Software.                           */
+/*                                                                               */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    */
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE   */
+/* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        */
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, */
+/* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN     */
+/* THE SOFTWARE.                                                                 */
+/*                                                                               */
+/*********************************************************************************/
+/* AUTHOR  : Aby Louw                                                            */
+/* DATE    : 14 May 2012                                                         */
+/*********************************************************************************/
+/* Added mixed excitation, function HTS_Vocoder_synthesize_me                    */
+/*********************************************************************************/
 
 #ifndef HTS_HIDDEN_H
 #define HTS_HIDDEN_H
@@ -394,7 +423,7 @@ void HTS_GStreamSet_initialize(HTS_GStreamSet * gss);
 HTS_Boolean HTS_GStreamSet_create(HTS_GStreamSet * gss, HTS_PStreamSet * pss, size_t stage, HTS_Boolean use_log_gain, size_t sampling_rate, size_t fperiod, double alpha, double beta, HTS_Boolean * stop, double volume, HTS_Audio * audio);
 
 /* HTS_GStreamSet_create: generate speech with given lf0 */
-HTS_Boolean HTS_GStreamSet_create_with_lf0(HTS_GStreamSet * gss, HTS_PStreamSet * pss, size_t stage, HTS_Boolean use_log_gain, size_t sampling_rate, size_t fperiod, double alpha, double beta, HTS_Boolean * stop, double volume, HTS_Audio * audio, const double * ilf0, size_t ilf0_nframes);
+HTS_Boolean HTS_GStreamSet_create_me_with_lf0(HTS_GStreamSet * gss, HTS_PStreamSet * pss, size_t stage, HTS_Boolean use_log_gain, size_t sampling_rate, size_t fperiod, double alpha, double beta, HTS_Boolean * stop, double volume, HTS_Audio * audio, size_t me_num_filters, size_t me_filter_order, const double ** me_filter, size_t pd_filter_order, const double * pd_filter, double * xp_sig, double * xn_sig, double * hp, double * hn, const double * ilf0, size_t ilf0_nframes);
 
 /* HTS_GStreamSet_get_total_nsamples: get total number of sample */
 size_t HTS_GStreamSet_get_total_nsamples(HTS_GStreamSet * gss);
@@ -501,6 +530,33 @@ void HTS_Vocoder_synthesize(HTS_Vocoder * v, size_t m, double lf0, double *spect
 
 /* HTS_Vocoder_clear: clear vocoder */
 void HTS_Vocoder_clear(HTS_Vocoder * v);
+
+/* HTS_Vocoder_ME: structure for setting of vocoder (mixed excitation) */
+typedef struct _HTS_Vocoder_ME {
+   HTS_Vocoder *v;                /* hts engine vocoder structure */
+   
+   /* mixed excitation */
+   double  *xp_sig;         /* pulse signal, the size of this should be the filter order */
+   double  *xn_sig;         /* noise signal, the size of this should be the filter order */
+   double  *hp;             /* pulse shaping filter, size of the filter order            */
+   double  *hn;             /* noise shaping filter, size of the filter order            */
+   size_t  num_filters;     /* number of filters                                         */
+   size_t  filter_order;    /* filter order                                              */
+   double **h;              /* me filter coefficients                                    */
+} HTS_Vocoder_ME;
+
+/* HTS_Vocoder_initialize_me: initialize vocoder (mixed excitation) */
+void HTS_Vocoder_initialize_me(HTS_Vocoder_ME * v_me, size_t m, size_t stage, HTS_Boolean use_log_gain, size_t rate, size_t fperiod,
+			       size_t num_filters, size_t filter_order, double **me_filter,
+			       double *xp_sig, double *xn_sig, double *hp, double *hn);
+
+/* HTS_Vocoder_synthesize_me: mixed excitation and MLSA/MGLSA filster based waveform synthesis */
+void HTS_Vocoder_synthesize_me(HTS_Vocoder_ME * v_me, size_t m, double lf0,
+			       double *spectrum, double *strengths, double alpha,
+			       double beta, double volume, double *rawdata, HTS_Audio * audio);
+
+/* HTS_Vocoder_clear_me: clear vocoder (mixed excitation) */
+void HTS_Vocoder_clear_me(HTS_Vocoder_ME * v_me);
 
 HTS_HIDDEN_H_END;
 

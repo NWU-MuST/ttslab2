@@ -426,14 +426,14 @@ double HTS_Engine_get_generated_speech(HTS_Engine * engine, size_t index);
 /* HTS_Engine_synthesize_from_fn: synthesize speech from file name */
 HTS_Boolean HTS_Engine_synthesize_from_fn(HTS_Engine * engine, const char *fn);
 
-/* HTS_Engine_synthesize_with_lf0: synthesize speech by replacing the generated lf0 with ilf0 before vocoding */
-HTS_Boolean HTS_Engine_synthesize_from_fn_with_lf0(HTS_Engine * engine, const char *fn, const double * ilf0, size_t ilf0_nframes);
+/* HTS_Engine_synthesize_me_with_lf0_from_fn: synthesize speech by replacing the generated lf0 with ilf0 before vocoding */
+HTS_Boolean HTS_Engine_synthesize_me_with_lf0_from_fn(HTS_Engine * engine, const char *fn, size_t me_num_filters, size_t me_filter_order, const double ** me_filter, size_t pd_filter_order, const double * pd_filter, double * xp_sig, double * xn_sig, double * hp, double * hn, const double * ilf0, size_t ilf0_nframes);
 
 /* HTS_Engine_synthesize_from_strings: synthesize speech from string list */
 HTS_Boolean HTS_Engine_synthesize_from_strings(HTS_Engine * engine, char **lines, size_t num_lines);
 
-/* HTS_Engine_synthesize_from_strings_with_lf0: synthesize speech from string list by replacing the generated lf0 with ilf0 before vocoding */
-HTS_Boolean HTS_Engine_synthesize_from_strings_with_lf0(HTS_Engine * engine, char **lines, size_t num_lines, const double * ilf0, size_t ilf0_nframes);
+/* HTS_Engine_synthesize_me_with_lf0_from_strings: synthesize speech from string list by replacing the generated lf0 with ilf0 before vocoding */
+HTS_Boolean HTS_Engine_synthesize_me_with_lf0_from_strings(HTS_Engine * engine, char **lines, size_t num_lines, size_t me_num_filters, size_t me_filter_order, const double ** me_filter, size_t pd_filter_order, const double * pd_filter, double * xp_sig, double * xn_sig, double * hp, double * hn, const double * ilf0, size_t ilf0_nframes);
 
 /* HTS_Engine_generate_state_sequence_from_fn: generate state sequence from file name (1st synthesis step) */
 HTS_Boolean HTS_Engine_generate_state_sequence_from_fn(HTS_Engine * engine, const char *fn);
@@ -447,8 +447,8 @@ HTS_Boolean HTS_Engine_generate_parameter_sequence(HTS_Engine * engine);
 /* HTS_Engine_generate_sample_sequence: generate sample sequence (3rd synthesis step) */
 HTS_Boolean HTS_Engine_generate_sample_sequence(HTS_Engine * engine);
 
-/* HTS_Engine_generate_sample_sequence_with_lf0: generate sample sequence (3rd synthesis step), replacing lf0 with ilf0 before vocoding*/
-HTS_Boolean HTS_Engine_generate_sample_sequence_with_lf0(HTS_Engine * engine, const double * ilf0, size_t ilf0_nframes);
+/* HTS_Engine_generate_sample_sequence_me_with_lf0: generate sample sequence (3rd synthesis step), replacing lf0 with ilf0 before vocoding*/
+HTS_Boolean HTS_Engine_generate_sample_sequence_me_with_lf0(HTS_Engine * engine, size_t me_num_filters, size_t me_filter_order, const double ** me_filter, size_t pd_filter_order, const double * pd_filter, double * xp_sig, double * xn_sig, double * hp, double * hn, const double * ilf0, size_t ilf0_nframes);
 
 /* HTS_Engine_save_information: save trace information */
 void HTS_Engine_save_information(HTS_Engine * engine, FILE * fp);
@@ -470,6 +470,12 @@ void HTS_Engine_refresh(HTS_Engine * engine);
 
 /* HTS_Engine_clear: free engine */
 void HTS_Engine_clear(HTS_Engine * engine);
+
+/* HTS_Engine_load_me_filter_from_fn: load mixed excitation filter from file name */
+void HTS_Engine_load_me_filter_from_fn(char *me_filter_fn, double ***me_filter, size_t *me_num_filters, size_t *me_filter_order);
+
+/* HTS_Engine_load_pd_filter_from_fn: load pulse dispersion filter from file name */
+void HTS_Engine_load_pd_filter_from_fn(char *pd_filter_fn, double **pd_filter, size_t *pd_filter_order);
 
 HTS_ENGINE_H_END;
 
