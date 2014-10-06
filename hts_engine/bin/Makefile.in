@@ -32,7 +32,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = hts_engine$(EXEEXT)
+bin_PROGRAMS = hts_engine$(EXEEXT) hts_engine_me$(EXEEXT)
 subdir = bin
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -47,6 +47,9 @@ PROGRAMS = $(bin_PROGRAMS)
 am_hts_engine_OBJECTS = hts_engine.$(OBJEXT)
 hts_engine_OBJECTS = $(am_hts_engine_OBJECTS)
 hts_engine_DEPENDENCIES = ../lib/libHTSEngine.a
+am_hts_engine_me_OBJECTS = hts_engine_me.$(OBJEXT)
+hts_engine_me_OBJECTS = $(am_hts_engine_me_OBJECTS)
+hts_engine_me_DEPENDENCIES = ../lib/libHTSEngine.a
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -54,8 +57,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(hts_engine_SOURCES)
-DIST_SOURCES = $(hts_engine_SOURCES)
+SOURCES = $(hts_engine_SOURCES) $(hts_engine_me_SOURCES)
+DIST_SOURCES = $(hts_engine_SOURCES) $(hts_engine_me_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -158,6 +161,8 @@ EXTRA_DIST = Makefile.mak
 INCLUDES = -I$(top_srcdir)/include
 hts_engine_SOURCES = hts_engine.c 
 hts_engine_LDADD = ../lib/libHTSEngine.a
+hts_engine_me_SOURCES = hts_engine_me.c 
+hts_engine_me_LDADD = ../lib/libHTSEngine.a
 DISTCLEANFILES = *.log *.out *~
 MAINTAINERCLEANFILES = Makefile.in
 all: all-am
@@ -219,6 +224,9 @@ clean-binPROGRAMS:
 hts_engine$(EXEEXT): $(hts_engine_OBJECTS) $(hts_engine_DEPENDENCIES) 
 	@rm -f hts_engine$(EXEEXT)
 	$(LINK) $(hts_engine_OBJECTS) $(hts_engine_LDADD) $(LIBS)
+hts_engine_me$(EXEEXT): $(hts_engine_me_OBJECTS) $(hts_engine_me_DEPENDENCIES) 
+	@rm -f hts_engine_me$(EXEEXT)
+	$(LINK) $(hts_engine_me_OBJECTS) $(hts_engine_me_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -227,6 +235,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hts_engine.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hts_engine_me.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
