@@ -572,13 +572,12 @@ HTS_Boolean HTS_Engine_synthesize_from_strings(HTS_Engine * engine, char **lines
 }
 
 /* HTS_Engine_synthesize_me_with_lf0_from_strings: synthesize speech from strings with given lf0 */
-HTS_Boolean HTS_Engine_synthesize_me_with_lf0_from_strings(HTS_Engine * engine, char **lines, size_t num_lines, size_t me_num_filters, size_t me_filter_order, const double ** me_filter, size_t pd_filter_order, const double * pd_filter, const double * ilf0, size_t ilf0_nframes)
+HTS_Boolean HTS_Engine_synthesize_me_with_lf0_from_strings(HTS_Engine * engine, char **lines, size_t num_lines, size_t me_num_filters, size_t me_filter_order, const double ** me_filter, size_t pd_filter_order, const double * pd_filter, double * xp_sig, double * xn_sig, double * hp, double * hn, const double * ilf0, size_t ilf0_nframes)
 {
    HTS_Engine_refresh(engine);
    HTS_Label_load_from_strings(&engine->label, engine->condition.sampling_frequency, engine->condition.fperiod, lines, num_lines);
-   return HTS_Engine_synthesize_me_with_lf0(engine, me_num_filters, me_filter_order, me_filter, pd_filter_order, pd_filter, ilf0, ilf0_nframes);
+   return HTS_Engine_synthesize_me_with_lf0(engine, me_num_filters, me_filter_order, me_filter, pd_filter_order, pd_filter, xp_sig, xn_sig, hp, hn, ilf0, ilf0_nframes);
 }
-
 
 /* HTS_Engine_save_information: save trace information */
 void HTS_Engine_save_information(HTS_Engine * engine, FILE * fp)

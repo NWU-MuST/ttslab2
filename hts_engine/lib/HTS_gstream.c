@@ -306,7 +306,7 @@ HTS_Boolean HTS_GStreamSet_create_me_with_lf0(HTS_GStreamSet * gss, HTS_PStreamS
 			     xp_sig, xn_sig, hp, hn);
    for (i = 0; i < gss->total_frame && (*stop) == FALSE; i++) {
       j = i * fperiod;
-      HTS_Vocoder_synthesize_me(&v_me, gss->gstream[0].static_length - 1,
+      HTS_Vocoder_synthesize_me(&v_me, gss->gstream[0].vector_length - 1,
 				gss->gstream[1].par[i][0],  /* log f0 */
 				&gss->gstream[0].par[i][0], /* spectrum */
 				&gss->gstream[2].par[i][0], /* band strengths */
