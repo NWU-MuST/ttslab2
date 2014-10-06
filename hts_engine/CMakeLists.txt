@@ -77,7 +77,7 @@ add_library(HTSEngine SHARED
   
 set_target_properties(HTSEngine
   PROPERTIES
-  COMPILE_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+  COMPILE_FLAGS "${CMAKE_C_FLAGS} -O2 -fPIC")
 
 
 #------------------------------------------------------------------------------------#
