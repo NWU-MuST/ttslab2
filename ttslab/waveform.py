@@ -20,7 +20,7 @@ try:
 except ImportError:
     import io.StringIO as StringIO
 
-def normrange(values, minval=-1.0, maxval=1.0):
+def normrange(values, minval=-0.8, maxval=0.8):
     values = values.astype(np.float64)
     if len(values.shape) == 1:
         newvalues = values / (np.max(values) - np.min(values)) * (maxval - minval)
@@ -29,7 +29,7 @@ def normrange(values, minval=-1.0, maxval=1.0):
         for i in range(values.shape[1]):
             newvalues[:,i] = values[:,i] / (np.max(values[:,i]) - np.min(values[:,i])) * (maxval - minval)
             newvalues[:,i] = newvalues[:,i] - np.min(newvalues[:,i]) + minval
-    return newvalues
+    return newvalues - np.mean(newvalues)
 
 def riffstring(waveform):
     f = StringIO.StringIO()
