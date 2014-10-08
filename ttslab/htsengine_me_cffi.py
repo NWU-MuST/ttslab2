@@ -12,6 +12,7 @@ from __future__ import unicode_literals, division, print_function #Py2
 __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
+import os
 import locale
 locale.setlocale(locale.LC_NUMERIC, ("C", "UTF-8")) #for C atof calls to recognize "." as floating point
 from cffi import FFI
@@ -19,6 +20,8 @@ from cffi import FFI
 import numpy as np
 
 from ttslab.waveform import Waveform, normrange
+
+MODULE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 def castdouble_np_2d_arr(ffi, x):
     """ from: http://arjones6.blogspot.com/2013/05/passing-multidimensional-numpy-arrays.html
@@ -79,9 +82,9 @@ class HTS_EngineME(object):
     def __init__(self, voicefn, mefiltfn, pdfiltfn):
         # setup FFI, library, init HTS_Engine and load voice...
         self.ffi = FFI()
-        with open("HTS_engine_cffi.h") as infh:
+        with open(os.path.join(MODULE_DIR, "HTS_engine_cffi.h")) as infh:
             self.ffi.cdef(infh.read())
-        self.libhts = self.ffi.dlopen("./libHTSEngine.so")
+        self.libhts = self.ffi.dlopen(os.path.join(MODULE_DIR, "libHTSEngine.so"))
         self.engine = self.ffi.new("HTS_Engine *")
         self.libhts.HTS_Engine_initialize(self.engine)
         cvoicefn = self.ffi.new("char[]", voicefn)
