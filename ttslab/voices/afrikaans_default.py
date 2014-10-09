@@ -334,20 +334,24 @@ class LwaziAfrikaans_simpleGPOS_HTSVoice(LwaziPromHTSVoice):
                     "by", "vanaf", "as", "teen", "voor", "onder",
                     "na", "oor", "terwyl", "sonder", "dat", "deur",
                     "tussen", "per", "af", "langs", "hierdie", "naas"]
-    DETERMINERS = ["die", "n", "geen", "nie", "elke", "nog", "al",
+    DETERMINERS = ["die", "n", "'n", "_n", "geen", "nie", "elke", "nog", "al",
                    "enige", "beide", "baie"]
     MODAL = ["sal", "wil", "mag", "sou", "wou", "moet", "wees"]
     CONJUNCTIONS = ["en", "maar", "omdat", "want", "of"]
     INTERROGATIVE_PRONOUNS = ["wie", "wat", "watter", "waar", "hoe", "wanneer", "hoekom"]
-    PERSONAL_PRONOUNS = ["haar", "sy", "hulle", "hul", "ons", "syne", "myne", "hare"]
+    PERSONAL_PRONOUNS = ["hy", "haar", "sy", "hulle", "hul", "ons", "syne", "myne", "hare"]
     AUXILIARY_VERBS = ["is", "het"]
+    DEMIT = ["dan", "toe", "nadat", "aan", "voordat", "jy", "u",
+             "was", "gewees", "geword", "word", "om", "te", "uit",
+             "tydens", "waarin", "se"] #DEMITASSE
     GPOS = dict([(word, "prep") for word in PREPOSITIONS] +
                 [(word, "det") for word in DETERMINERS] +
                 [(word, "md") for word in MODAL] +
                 [(word, "cc") for word in CONJUNCTIONS] +
                 [(word, "wp") for word in INTERROGATIVE_PRONOUNS] + 
                 [(word, "pps") for word in PERSONAL_PRONOUNS] +
-                [(word, "aux") for word in AUXILIARY_VERBS])
+                [(word, "aux") for word in AUXILIARY_VERBS] +
+                [(word, "demit") for word in DEMIT])
 
     def __init__(self, phoneset, g2p, pronundict, pronunaddendum, synthesizer):
         LwaziHTSVoice.__init__(self,
