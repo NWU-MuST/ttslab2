@@ -1,48 +1,36 @@
 # -*- coding: utf-8 -*-
-""" An utterance processor implements an independent module that can
-    be used during synthesis. This leaves two mechanisms whereby a
-    voice can manipulate an utterance: methods of the voice itsself or
-    utterance processors.
+"""An utterance processor implements an independent module that can be
+   used during synthesis. This leaves two mechanisms whereby a voice
+   can manipulate an utterance: methods of the voice itsself or
+   utterance processors.
+
+   UttProcessor instances MUST STAY CONSTANT DURING SYNTHESIS and be
+   instantiated by loading all the required data.
+
 """
 from __future__ import unicode_literals, division, print_function #Py2
 
 __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
-from collections import OrderedDict
-
-class ProcessNotDefined(Exception):
-    pass
-
-class UttProcessorError(Exception):
-    pass
-
 class UttProcessor(object):
-    """ This is the base UttProcessor class.. An UttProcessor is
-        instantiated at voice instantiation time and subsequently used
-        to apply a process (which might be one or a number of methods
-        of the object).
+    """This is the base UttProcessor class..
+
+       An UttProcessor is instantiated at voice instantiation time and
+       MUST STAY CONSTANT DURING SYNTHESIS (lifetime of the voice)...
     """
-    def __init__(self, voice):
-
-        self.voice = voice
-        #this should hold process name (e.g. 'text-to-words' or
-        #'text-to-wave') with ordered dict of methodnames to be executed in
-        #order each time passed the value as processname parameter...
-        self.processes = {"default": OrderedDict([("methodname", "processname"),
-                                                  ("methodname2", "processname2")])}
-        
-
-    def __call__(self, utt, processname):
-        """ Apply the pipeline of methods associated with processname
-            and return the resulting Utterance...
+    def process(self, voice, utt, args):
+        """Implement the actual processing logic, this method just to keep
+           consistency with Voice method by the same name, and for
+           clearer code when calling the processor external to the
+           voice, with explicit passing in of a Voice instance.
         """
-        if processname in self.processes:
-            for procname in self.processes[processname]:
-                proc = getattr(self, procname)
-                utt = proc(utt, self.processes[processname][procname])
-        else:
-            raise ProcessNotDefined(processname)
-
+        raise NotImplementedError
         return utt
 
+    def __call__(self, voice, utt, args):
+        """Make object callable, receiving the voice as first parameter, meant
+           to be attached to a Voice instance and used as would a
+           method of the voice.
+        """
+        return self.process(voice, utt, args)

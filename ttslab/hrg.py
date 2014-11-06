@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """ Implementation of the HRG structure....
     Stick to returning None vs. raising Exceptions for the HRG...
+    Also minimal use of TRY-EXCEPT here...
 """
 from __future__ import unicode_literals, division, print_function #Py2
 
@@ -22,10 +23,8 @@ class ItemContent(object):
         to by Items can be shared by Items in different Relations.
     """
     def __init__(self):
-
         self.features = {}
         self.relations = {}
-
     
     def add_item_relation(self, item):
         """ Adds the given item to the set of relations. Whenever an
@@ -41,13 +40,11 @@ class ItemContent(object):
 
         self.relations[relationname] = item
 
-
     def remove_item(self, item):
         """ Removes Item and deletes self if this was the last Item
             referencing this content...
         """
         del self.relations[item.relation.name]
-
 
     def remove(self, remove_dependent_content=False):
         """ This function will remove the ItemContent and all
@@ -56,7 +53,6 @@ class ItemContent(object):
         for relationname in self.relations.keys():
             self.relations[relationname].remove(remove_dependent_content)
 
-
     def __str__(self):
         """ Method to sensibly convert object to string lines that can
             be used to print HRG structure from higher levels...
@@ -64,13 +60,10 @@ class ItemContent(object):
         return "\n".join([repr(self), str(self.features)])
 
 
-
 class Item(object):
     """ Represents a node in a Relation...
     """
-
     def __init__(self, relation, itemcontent):
-
         self.relation = relation
         self.content = itemcontent
         #update ItemContent to be aware of item in this relation:
@@ -82,7 +75,7 @@ class Item(object):
 
         self.first_daughter = None
         self.last_daughter = None
-        
+
         
     def __eq__(self, item):
         """ Determines if the shared contents of the two items are the
@@ -90,31 +83,25 @@ class Item(object):
         """
         return self.content is item.content
 
-
     def __ne__(self, item):
         return not self.__eq__(item)
-
 
     def __getitem__(self, featname):
         """ Returns the requested feature from itemcontent.
         """
-        try:
+        if featname in self.content.features:
             return self.content.features[featname]
-        except KeyError:
-            return None
-
+        return None
     
     def __setitem__(self, featname, feat):
         """ Sets the specific feature in itemcontent.
         """
         self.content.features[featname] = feat
 
-
     def __delitem__(self, featname):
         """ Deletes the specific feature in itemcontent.
         """
         del self.content.features[featname]
-
     
     def __iter__(self):
         """ Iterate over features.
@@ -126,13 +113,11 @@ class Item(object):
         """
         return featname in self.content.features
 
-
     def remove(self, remove_dependent_content=False):
         """ This function serves to remove (delete) the current Item
             and the corresponding ItemContent if no other Items are
             referencing it....
         """
-
         #fix pointers:
         if self.relation.head_item is self:
             self.relation.head_item = self.next_item
@@ -161,19 +146,16 @@ class Item(object):
         self.content.remove_item(self)
 
 
-
     def remove_content(self, remove_dependent_content=True):
         """ This function will remove the ItemContent and all Items
             sharing...
         """
         self.content.remove(remove_dependent_content)
 
-
     def keys(self):
         """ Returns the set of feature keys of this item.
         """
         return self.content.features.keys()
-
 
     def _create_related_item(self, item=None):
         """ Create new Item related to self..
@@ -183,9 +165,7 @@ class Item(object):
         else:
             #create new Item sharing content...
             newitem = Item(self.relation, item.content)
-
         return newitem
-
 
     def add_daughter(self, item=None):
         """ Add the given item as a daughter to this item..
@@ -224,7 +204,6 @@ class Item(object):
             self.next_item = newitem
             newitem.prev_item = self
             newitem.parent_item = self.parent_item
-
         return newitem
 
     def prepend_item(self, item=None):
@@ -252,11 +231,9 @@ class Item(object):
         """ Finds the item in the given relation that has the same
             shared contents.
         """
-        try:
+        if relationname in self.content.relations:
             return self.content.relations[relationname]
-        except KeyError:
-            return None
-
+        return None
 
     def in_relation(self, relationname):
         """ Returns true if this item has shared contents linked to an
@@ -298,7 +275,6 @@ class Item(object):
     #         return None
     #     return None
 
-
     def get_daughters(item):
         """ Constructs a list of daughters of the current Item and
             returns this...
@@ -310,18 +286,15 @@ class Item(object):
             daughter_item = daughter_item.next_item
         return l
 
-
     def get_utterance(self):
         """ Returns the utterance associated with this item.
         """
         return self.relation.utterance
-
     
     def has_daughters(self):
         """ Determines if this item has daughters.
         """
         return bool(self.first_daughter)
-
 
     def __str__(self):
         """ A method to sensibly convert object to string lines that
@@ -336,7 +309,6 @@ class Item(object):
             lines.append("\tDaughter:")
             lines += ["\t" + line for line in str(daughter).splitlines()]
             daughter = daughter.next_item
-
         return "\n".join(lines)
 
 
@@ -344,7 +316,6 @@ class Relation(object):
     """ Represents an ordered set of Items and their associated
         children.
     """
-
     def __init__(self, utterance, relationname):
 
         self.name = relationname
@@ -402,9 +373,7 @@ class Relation(object):
 
         return newitem
 
-
-    #we could still implement a prepend_item
-
+#we could still implement a prepend_item
 
     def as_list(self):
         """ Creates a list of Items in this Relation and returns
@@ -412,20 +381,16 @@ class Relation(object):
         """
         return list(self)
 
-
     def __str__(self):
         """ A method to sensibly convert object to string lines that
             can be used to print HRG structure from higher levels...
         """
         lines = [repr(self)]
-
         item = self.head_item
-        
         while item is not None:
             lines.append("\tItem:")
             lines += ["\t" + line for line in str(item).splitlines()]
             item = item.next_item
-
         return "\n".join(lines)
 
 
@@ -433,48 +398,30 @@ class Utterance(object):
     """ An Utterance contains a set of Features (essentially a set of
         properties) and a set of Relations.
     """
-
-    def __init__(self, voice=None):
-        """ Creates a new, empty utterance.
+    def __init__(self, voicetype=None):
+        """Creates a new, empty utterance.
         """
-        self.voice = voice
-
         self.features = {}
         self.relations = {}
-
-    
-    def __getstate__(self):
-        """ When pickling, we sever the link to the voice...
-        """
-        return (self.features, self.relations)
-
-    
-    def __setstate__(self, state):
-        self.voice = None
-        (self.features,
-         self.relations) = state
-
+        if voicetype:
+            self.features["voicetype"] = voicetype
         
     def __getitem__(self, featname):
         """ Returns the requested feature.
         """
-        try:
+        if featname in self.features:
             return self.features[featname]
-        except KeyError:
-            return None
-
+        return None
     
     def __setitem__(self, featname, feat):
         """ Sets the specific feature.
         """
         self.features[featname] = feat
 
-
     def __delitem__(self, featname):
         """ Deletes the specific feature.
         """
         del self.features[featname]
-
     
     def __iter__(self):
         """ Iterate over features.
@@ -486,39 +433,30 @@ class Utterance(object):
         """
         return featname in self.features
 
-
     def new_relation(self, relationname):
         """ Creates a new relation with the given name and adds it to
             this utterance.
         """
         newrelation = Relation(self, relationname)
-
         self.relations[relationname] = newrelation
-
         return newrelation
-        
 
     def get_relation(self, relationname):
         """ Retrieves a relation from this utterance.
         """
-        try:
+        if relationname in self.relations:
             return self.relations[relationname]
-        except KeyError:
-            return None
-
+        return None
    
     def __str__(self):
         """ This is a temporary method to sensibly convert object to
             string lines that can be used to print HRG structure...
         """
         lines = [repr(self), str(self.features)]
-
         for relationname in self.relations:
             lines.append("\tRelation %s:" % (relationname))
             lines += ["\t" + line for line in str(self.get_relation(relationname)).splitlines()]
-
         return "\n".join(lines)
-
 
 # Convenience functions for HRG traversal... should be moved to
 # ifuncs.py once pytts.extend has been improved...
@@ -560,7 +498,6 @@ def traverse(item, pathstring):
                "F": "['%s']",
                "M": ".%s"
                }
-
     pathlist = pathstring.split(".")
     cmdstring = "item"
     for step in pathlist:
@@ -574,7 +511,6 @@ def traverse(item, pathstring):
     except (TypeError, AttributeError):
         raise TraversalError
 
-
 def num_daughters(item):
     count = 0
     daughter_item = item.first_daughter
@@ -583,14 +519,12 @@ def num_daughters(item):
         daughter_item = daughter_item.next_item
     return count
 
-
 #extend Item:
 #########################
 Item.first_item = first_item
 Item.last_item = last_item
 Item.traverse = traverse
 Item.num_daughters = num_daughters
-
 
 #HRG method shorthand forms:
 #############################
@@ -601,10 +535,8 @@ Item.ai = Item.append_item
 Item.pi = Item.prepend_item
 Item.ir = Item.in_relation
 Item.gir = Item.get_item_in_relation
-
 Relation.al = Relation.as_list
 Relation.ai = Relation.append_item
-
 Utterance.gr = Utterance.get_relation
 
 
@@ -623,7 +555,6 @@ if __name__ == "__main__":
     sylrel = utt.new_relation("Syllable")
     segmentrel = utt.new_relation("Segment")
     sylstructrel = utt.new_relation("SylStructure")
-
 
     # add words
     for word in utt["text"].split():
