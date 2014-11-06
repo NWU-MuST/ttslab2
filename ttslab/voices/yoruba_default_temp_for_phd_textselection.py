@@ -26,7 +26,6 @@ from .. synthesizer_htsme import SynthesizerHTSME
 from . yoruba_orth2tones import word2tones
 from .. waveform import Waveform
 from .. trackfile import Track
-from .. pronundict import PronunLookupError
 
 
 def anycharsin(s, stemplate):
@@ -402,10 +401,10 @@ class LwaziYorubaMultiHTSVoice(LwaziMultiHTSVoice):
                     word_item["lang"] = "eng"
                     wordname = wordname[1:]
                     pronunform = pronunform[1:]
-                elif (((wordname in self.engpronunaddendum or
-                        wordname in self.engpronundict) and
+                elif (((self.engpronunaddendum.contains(wordname) or
+                        self.engpronundict.contains(wordname)) and
                        len(pronunform) > self.ENGWORD_CHARTHRESHOLD and
-                       pronunform not in self.pronunaddendum) or
+                       not self.pronunaddendum.contains(pronunform)) or
                       not all([c in self.SMALLGRAPHSET for c in pronunform.lower()])): #if invalid Yoruba orthography
                     word_item["lang"] = "eng"
                 else:
@@ -433,47 +432,38 @@ class LwaziYorubaMultiHTSVoice(LwaziMultiHTSVoice):
         def g2p(word, phoneset, pronundict, pronunaddendum, g2p):
             syltones = None
             syllables = None
-            if pronunaddendum and word["pronunform"] in pronunaddendum:
-                    phones = pronunaddendum[word["pronunform"]]
-                    syllables = phoneset.syllabify(phones)
+            if pronunaddendum and pronunaddendum.contains(word["pronunform"]):
+                phones = pronunaddendum.pron_lookup(word["pronunform"]) #DEMITASSE: assumed simple for now...
             else:
-                try:
-                    wordpronun = pronundict.lookup(word["pronunform"], word["pos"])
-                except PronunLookupError as e:
-                    if e.value == "no_pos":
-                        wordpronun = self.pronundict.lookup(word_item["name"])
-                    else:
-                        wordpronun = None
-                except AttributeError:
-                    wordpronun = None
-                if wordpronun:
-                    if "syllables" in wordpronun:
-                        syllables = wordpronun["syllables"]
-                        syltones = wordpronun["syltones"] #None if doesn't exist
-                    else:
-                        phones = wordpronun["phones"]
-                        syllables = phoneset.syllabify(phones)
-                else:
+                if pronundict.contains(word["pronunform"], word["pos"]): #with POS?
+                    syllables = self.pronundict.syll_lookup(word["pronunform"], word["pos"]) #try: might return None
+                    syltones = self.pronundict.tone_lookup(word["pronunform"], word["pos"])  #try: might return None
+                    if not syllables:
+                        phones = self.pronundict.syll_lookup(word["pronunform"], word["pos"])
+                elif pronundict.contains(word["pronunform"]):            #without POS?
+                    syllables = self.pronundict.syll_lookup(word["pronunform"]) #try: might return None
+                    syltones = self.pronundict.tone_lookup(word["pronunform"])  #try: might return None
+                    if not syllables:
+                        phones = self.pronundict.syll_lookup(word["pronunform"])
+                else:  #word not in pronundict
                     try:
-                        phones = pronundict[word["pronunform"]]
-                    except KeyError:
-                        try:
-                            phones = g2p.predict_word(word["pronunform"])
-                        except (GraphemeNotDefined, NoRuleFound):
-                            warns = "WARNING: No pronunciation found for '%s'" % word["name"]
-                            print(warns.encode("utf-8"), file=sys.stderr)
-                            phones = [self.phoneset.features["silence_phone"]]
-                    syllables = phoneset.syllabify(phones)
+                        phones = g2p.predict_word(word["pronunform"])
+                    except (GraphemeNotDefined, NoRuleFound):
+                        warns = "WARNING: No pronunciation found for '%s'" % word["name"]
+                        print(warns.encode("utf-8"), file=sys.stderr)
+                        phones = [self.phoneset.features["silence_phone"]]
+            if not syllables:
+                syllables = phoneset.syllabify(phones)
             if not syltones:
                 try:
                     syltones = phoneset.guess_sylstress(syllables)
                 except AttributeError:
-                    try:
-                        syltones = word2tones(word["name"])
-                        assert len(syltones) == len(syllables)
-                    except AssertionError:
-                        #print(word_item["name"], word_item["pronunform"], syllables, syltones)
-                        syltones = "N" * len(syllables)
+                    syltones = word2tones(word["name"])
+            try:
+                assert len(syltones) == len(syllables)
+            except AssertionError:
+                #print(word_item["name"], word_item["pronunform"], syllables, syltones)
+                syltones = "N" * len(syllables)
             return syllables, syltones
 
         word_rel = utt.get_relation("Word")

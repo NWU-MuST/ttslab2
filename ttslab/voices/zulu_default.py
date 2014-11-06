@@ -237,7 +237,7 @@ class LwaziZuluMultiHTSVoice(LwaziMultiHTSVoice):
                 if wordname.startswith("|"):
                     word_item["lang"] = "eng"
                     wordname = wordname[1:]
-                elif (wordname in self.engpronunaddendum or wordname in self.engpronundict) and len(wordname) > 2 and wordname not in self.pronunaddendum:
+                elif (self.engpronunaddendum.contains(wordname) or self.engpronundict.contains(wordname)) and len(wordname) > 2 and not self.pronunaddendum.contains(wordname):
                     word_item["lang"] = "eng"
                 else:
                     word_item["lang"] = "def" #default language...
