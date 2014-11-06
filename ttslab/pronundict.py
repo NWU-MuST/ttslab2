@@ -1,9 +1,19 @@
 # -*- coding: utf-8 -*-
-""" Prototype implementation of a pronunciation dictionary.
+"""Second try at implementation of a pronunciation dictionary for
+   TTS, keep it simple with the following ideas:
 
-    TODO:
-         - Review entire implementation.
-         - Raising KeyError vs returning None?
+    -- Only one pronunciation per word-tag pair is necessary (TTS)
+
+    -- Tags are primarily designed for POS info but may represent
+       other significant contexts
+
+    -- Dictionaries may contain phoneme strings, syllable structure
+       and a syllable feature such as tone or stress
+
+    -- Simplest cases may only contain phoneme strings
+
+    -- Return None when entry not found instead of raising KeyError
+
 """
 from __future__ import unicode_literals, division, print_function #Py2
 
@@ -11,184 +21,173 @@ __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
 import codecs
-import copy
 
-class PronunLookupError(Exception):
-    def __init__(self, value):
-        if value not in ["no_word", "no_pos"]:
-            raise Exception
-        self.value = value
-
-class Word(object):
-    def __init__(self, name, pronun, syltones=None, pos=None):
-        """ NB: pronun with syls must be list of lists...
-        """
-        self.features = {}
-        self["name"] = name     #standard word representation (same as in PronunciationDictionary.entries keys)
-        if isinstance(pronun, list):
-            self["syllables"] = pronun
-            self["phones"] = [item for sublist in pronun for item in sublist]
-        else:
-            self["phones"] = pronun
-        if syltones:
-            if "syllables" in self:
-                if len(syltones) != len(self["syllables"]):
-                    print(self["name"])
-                    print(syltones)
-                    print(self["syllables"])
-                    raise Exception("Word.__init__(): len(syltones) != len(syllables)")
-            else:
-                pass # if syllables not available, ignore test...
-            self["syltones"] = syltones  #a string representing stress or tones of syllables
-        if pos:
-            self["pos"] = pos            #part-of-speech
-
-    def __getitem__(self, featname):
-        try:
-            return self.features[featname]
-        except KeyError:
-            return None
-    
-    def __setitem__(self, featname, feat):
-        self.features[featname] = feat
-
-    def __delitem__(self, featname):
-        del self.features[featname]
-    
-    def __iter__(self):
-        return self.features.__iter__()
-
-    def __contains__(self, featname):
-        return featname in self.features
-
+#Special character not allowed in dictionary
+SEP = "*"
 
 class PronunciationDictionary(object):
-    """ Simple class to contain and provide relevant access to a
-        pronunciation dictionary
+    """Basic implementation...
     """
-
-    def __init__(self):
-        self.features = {} #for metadata
-        self.entries = {}  #keys are canonical graphemic
-                           #representation of words (ttslab convention:
-                           #all lowercase) -> Word or [Word, Word, ...]
-
-
-    def __getitem__(self, word):
-        return self.entries[word]
-    
-    def __setitem__(self, word, entry):
-        if word in self:
-            try:
-                self.entries[word].append(entry)
-            except AttributeError:
-                self.entries[word] = [self.entries[word], entry]
+    def __init__(self, prond=None, sylld=None, toned=None):
+        if prond:
+            self.prond = prond
         else:
-            self.entries[word] = entry
+            self.prond = {}
+        if sylld:
+            self.sylld = sylld
+        else:
+            self.sylld = {}
+        if toned:
+            self.toned = toned
+        else:
+            self.toned = {}
 
-    def __delitem__(self, word):
-        del self.entries[word]
+    def contains(self, word, pos=None):
+        if pos:
+            return SEP.join(word, pos) in self.prond
+        return word in self.prond
 
-    def __iter__(self):
-        return self.entries.__iter__()
+    def __check_consistency(self):
+        """Assert that all info is consistent"""
+        try:
+            for k in self.prond:
+                if k in self.sylld:
+                    assert sum(map(int, list(self.sylld[k]))) == len(self.prond[k].split())
+            for k in self.sylld:
+                assert k in self.prond
+                if k in self.toned:
+                    assert len(self.toned[k]) == len(self.sylld[k])
+        except Exception as e:
+            print("Offending entry:", k)
+            raise
 
-    def __contains__(self, word):
-        return word in self.entries
-        
-    def _consistencycheck(self):
-        """checks consistency of features in entries...
+    def __check_phoneset(self, phset):
+        """check all dictionary entries are compatible with a specific
+           phoneset...
         """
-        pass
+        phset = set(phset)
+        dphset = set()
+        for k in self.prond:
+            dphset.update(self.prond[k].split())
+        uset = dphset.union(phset)
+        assert uset == phset
+
+    def pron_lookup(self, word, tag=None):
+        if tag:
+            k = SEP.join([word, tag])
+        else:
+            k = word
+        if k in self.prond:
+            return self.prond[k].split()
+        return None
+        
+    def syll_lookup(self, word, tag=None):
+        _pron = self.pron_lookup(word, tag)
+        if tag:
+            k = SEP.join([word, tag])
+        else:
+            k = word
+        if k in self.sylld:
+            _syll = []
+            c = 0
+            for l in map(int, list(self.sylld[k])):
+                _syll.append(_pron[c:c+l])  #_pron is not None
+                c += l
+            return _syll
+        return None
+
+    def tone_lookup(self, word, tag=None):
+        if tag:
+            k = SEP.join([word, tag])
+        else:
+            k = word
+        if k in self.toned:
+            return list(self.toned[k])
+        return None
 
     def toscmfile(self, fn, phonemap=None):
         with codecs.open(fn, "w", encoding="utf-8") as outfh:
-            for k in sorted(self):
-                entry = self[k]
-                if not isinstance(entry, list):
-                    entry = [entry]
-                for word in entry:
-                    text = '("%s" %s (%s))' % (word["name"], word["pos"], "%s")
-                    syltext = ""
-                    for syl, tone in zip(word["syllables"], word["syltones"]):
-                        syltext += "((%s) %s) " % (" ".join(syl), tone)
-                    text = text % syltext.strip() + "\n"
-                    outfh.write(text)
+            for k in sorted(self.prond):
+                if SEP in k:
+                    word, tag = k.split(SEP)
+                else:
+                    word, tag = (k, None)
+                sylls = self.syll_lookup(word, tag)
+                if sylls:
+                    tones = self.tone_lookup(word, tag)
+                    if not tones:
+                        tones = [0] * len(sylls)
+                    if phonemap:
+                        prontext = " ".join(["((%s) %s)" % (" ".join([phonemap[p] for p in syl]), tone) for syl, tone in zip(sylls, tones)])
+                    else:
+                        prontext = " ".join(["((%s) %s)" % (" ".join(syl), tone) for syl, tone in zip(sylls, tones)])
+                else:
+                    if phonemap:
+                        prontext = " ".join([phonemap[p] for p in self.prond[word].split()])
+                    else:
+                        prontext = self.prond[k]
+                text = '("%s" %s (%s))\n' % (word, tag, prontext)
+                outfh.write(text)
 
     def totextfile(self, fn, phonemap=None):
         with codecs.open(fn, "w", encoding="utf-8") as outfh:
-            for k in sorted(self):
-                entry = self[k]
-                if not isinstance(entry, list):
-                    entry = [entry]
-                for word in entry:
-                    syllables = word["syllables"]
-                    if syllables:
-                        try:
-                            for syl in syllables: assert len(syl) < 10
-                        except AssertionError:
-                            print(word["name"])
-                            raise
-                        syllables = "".join([str(len(syl)) for syl in syllables]) #assuming single digits
-                    phones = word["phones"]
-                    if phonemap:
-                        phones = [phonemap[ph] for ph in phones]
-                    outfh.write(" ".join([word["name"], str(word["pos"]), word["syltones"], syllables, " ".join(phones)]) + "\n")
+            for k in sorted(self.prond):
+                if SEP in k:
+                    word, tag = k.split(SEP)
+                else:
+                    word, tag = (k, None)
+                if k in self.sylld:
+                    syls = self.sylld[k]
+                else:
+                    syls = None
+                if k in self.toned:
+                    tones = self.toned[k]
+                else:
+                    tones = None
+                if phonemap:
+                    phones = " ".join([phonemap[p] for p in self.pron_lookup(word, tag)])
+                else:
+                    phones = self.prond[k]
+                outfh.write(" ".join([word, str(tag), str(tones), str(syls), phones]) + "\n")
 
-    def fromtextfile(self, fn, phonemap=None, nonestring="None"):
-        """ abandon None 010 133 _ b a n d _ n
+    def fromsimpletextfile(self, fn, phonemap=None):
+        """ abandon q b a n d q n
         """
         with codecs.open(fn, encoding="utf-8") as infh:
             for line in infh:
-                elems = line.split()
-                word = elems[0]
-                if elems[1] != nonestring:
-                    pos = elems[1]
-                else:
-                    pos = None
-                if elems[2] != nonestring:
-                    syltones = elems[2]
-                else:
-                    syltones = None
+                fields = line.split()
+                word = fields[0]
+                if SEP in word:
+                    raise Exception("Asterisk character (*) not allowed in word: " + word)
+                phones = fields[1:]
                 if phonemap:
-                    try:
-                        phones = [phonemap[ph] for ph in elems[4:]]
-                    except KeyError:
-                        print(line)
-                        raise
-                else:
-                    phones = elems[4:]
-                syllables = []
-                for s in elems[3]:
-                    syllables.append(phones[:int(s)])
-                    for i in range(int(s)):
-                        try:
-                            phones.pop(0)
-                        except IndexError:
-                            print(line)
-                            raise
-                self.add_word(word, syllables, syltones, pos)
+                    phones = [phonemap[p] for p in phones]
+                self.prond[word] = " ".join(phones)
         return self
 
-    def _checkagainstphoneset(self):
-        """check all dictionary entries are compatible with a specific
-        phoneset...
+    def fromtextfile(self, fn, phonemap=None, nonestring="None"):
+        """ abandon VERB 010 133 q b a n d q n
         """
-        raise NotImplementedError
-
-    def add_word(self, word, pronun, syltones=None, pos=None):
-        entry = Word(word, pronun, syltones, pos)
-        self[word] = entry
-
-    def lookup(self, word, pos=None):
-        try:
-            entry = self[word]
-        except KeyError:
-            raise PronunLookupError("no_word")
-        if not isinstance(entry, list):
-            entry = [entry]
-        if not pos:
-            return copy.deepcopy(entry[0]) #pos not important: return first word
-        for word in entry:
-            if pos == word["pos"]:
-                return copy.deepcopy(word) #first matching word
-        raise PronunLookupError("no_pos")
+        with codecs.open(fn, encoding="utf-8") as infh:
+            for line in infh:
+                fields = line.split()
+                word = fields[0]
+                if SEP in word:
+                    raise Exception("Asterisk character (*) not allowed in word: " + word)
+                tag = fields[1]
+                tones = fields[2]
+                sylls = fields[3]
+                phones = fields[4:]
+                if tag == nonestring:
+                    k = word
+                else:
+                    k = SEP.join([word, tag])
+                if tones != nonestring:
+                    self.toned[k] = tones
+                if sylls != nonestring:
+                    self.sylld[k] = sylls
+                if phonemap:
+                    phones = [phonemap[p] for p in phones]
+                self.prond[k] = " ".join(phones)
+        self.__check_consistency()
+        return self
