@@ -28,7 +28,7 @@ class UttProcessor(object):
         raise NotImplementedError
         return utt
 
-    def __call__(self, voice, utt, args):
+    def __call__(self, voice, utt, args=None):
         """Make object callable, receiving the voice as first parameter, meant
            to be attached to a Voice instance and used as would a
            method of the voice.

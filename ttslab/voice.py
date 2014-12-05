@@ -77,11 +77,11 @@ class Voice(object):
         return utt
 
     #################### User API:
-    def synthesize(self, inputstring, processname="text-to-segments"):
+    def synthesize(self, inputstring, processname="text-to-wave"):
         """ Render the inputstring...
         """
         utt = self._create_utterance()
-        utt["text"] = inputstring
+        utt["inputtext"] = inputstring
         utt = self.process(utt, processname)
         return utt
 

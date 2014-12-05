@@ -42,6 +42,16 @@ class PronunciationDictionary(object):
         else:
             self.toned = {}
 
+    def __iter__(self):
+        l = sorted(set([entry.split(SEP)[0] for entry in self.prond]))
+        return l.__iter__()
+
+    def __contains__(self, word):
+        """Simpler, without possibility to consider POS, but sometimes
+           convenient and maintaining compatibility...
+        """
+        return self.contains(word)
+
     def contains(self, word, pos=None):
         if pos:
             return SEP.join(word, pos) in self.prond
@@ -61,7 +71,7 @@ class PronunciationDictionary(object):
             print("Offending entry:", k)
             raise
 
-    def __check_phoneset(self, phset):
+    def check_against_phoneset(self, phset):
         """check all dictionary entries are compatible with a specific
            phoneset...
         """
@@ -164,6 +174,13 @@ class PronunciationDictionary(object):
                     phones = [phonemap[p] for p in phones]
                 self.prond[word] = " ".join(phones)
         return self
+
+    def updatefromsimpledict(self, d):
+        for k in d:
+            if type(d[k]) is list:
+                self.prond[k] = " ".join(d[k])
+            else:
+                self.prond[k] = " ".join(d[k].split())
 
     def fromtextfile(self, fn, phonemap=None, nonestring="None"):
         """ abandon VERB 010 133 q b a n d q n
