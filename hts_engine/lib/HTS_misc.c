@@ -92,6 +92,22 @@ HTS_File *HTS_fopen_from_fn(const char *name, const char *opt)
    return fp;
 }
 
+/* HTS_fopen_from_stdio_fp: wrap FILE pointer in HTS_File */
+HTS_File *HTS_fopen_from_stdio_fp(FILE * infp)
+{
+   HTS_File *fp = (HTS_File *) HTS_calloc(1, sizeof(HTS_File));
+
+   fp->type = HTS_FILE;
+   fp->pointer = (void *) infp;
+
+   if (fp->pointer == NULL) {
+      HTS_error(0, "HTS_fopen_from_stdio_fp: Bad file pointer.\n"); /*DEMITASSE*/
+      HTS_free(fp);
+      return NULL;
+   }
+   return fp;
+}
+
 /* HTS_fopen_from_fp: wrapper for fopen */
 HTS_File *HTS_fopen_from_fp(HTS_File * fp, size_t size)
 {

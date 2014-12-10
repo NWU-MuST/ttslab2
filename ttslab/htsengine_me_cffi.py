@@ -21,8 +21,10 @@ import cffi #from cffi import FFI
 MODULE_DIR = os.path.abspath(os.path.dirname(__file__)) #the htsengine .h and .so files need to be in this directory
 FFI = cffi.FFI()
 with open(os.path.join(MODULE_DIR, "HTS_engine_cffi.h")) as infh:
-    FFI.cdef(infh.read())
+    FFI.cdef(infh.read() + "\n" + "\n".join(["FILE *fmemopen(void *buf, size_t size, const char *mode);",
+                                             "int fclose(FILE *fp);"]) + "\n")
 LIBHTS = FFI.dlopen(os.path.join(MODULE_DIR, "libHTSEngine.so"))
+LIBC = FFI.dlopen(None)
 
 import numpy as np
 
@@ -85,33 +87,35 @@ class HTS_EngineME(object):
                    "str": 2}
     HTS_TRUE = 1
     HTS_FALSE = 0
-    def __init__(self, voicefn, mefiltfn, pdfiltfn):
+    def __init__(self, voice, mefilt, pdfilt): #these are python bytestrings obtained from the original files...
         # init HTS_Engine and load voice...
         self.engine = FFI.new("HTS_Engine *")
         LIBHTS.HTS_Engine_initialize(self.engine)
-        cvoicefn = FFI.new("char[]", voicefn)
-        ok = bool(ord(LIBHTS.HTS_Engine_load(self.engine, (cvoicefn, ), 1)))
+        voicebuf = FFI.new("char[]", voice)
+        mode = FFI.new("char[]", b"r")
+        voicefp = LIBC.fmemopen(voicebuf, len(voice), mode)
+        ok = bool(ord(LIBHTS.HTS_Engine_load_fp(self.engine, voicefp))) #LIBC.fclose(voicefp) --- WILL BE CLOSED INTERNALLY
         if not ok:
             raise HTSError("HTS_Engine: failed to load voice file...")
         # load mixed excitation bandpass filters and pulse dispersion filter from text files...
-        with open(mefiltfn) as infh:
-            lines = infh.read().split()
-        self.me_nfilters = int(lines[0])
-        self.me_filtorder = int(lines[1])
+        mefiltlines = mefilt.split()
+        self.me_nfilters = int(mefiltlines[0])
+        self.me_filtorder = int(mefiltlines[1])
         self.me_filters = np.zeros((self.me_nfilters, self.me_filtorder), dtype=np.float64)
         for i in range(self.me_nfilters):
-            self.me_filters[i,:] = map(float, lines[i*self.me_filtorder+2:i*self.me_filtorder+2+self.me_filtorder])
+            self.me_filters[i,:] = map(float, mefiltlines[i*self.me_filtorder+2:i*self.me_filtorder+2+self.me_filtorder])
         self.me_filterpointers = castdouble_np_2d_arr(self.me_filters)
-        with open(pdfiltfn) as infh:
-            lines = infh.read().split()
-        self.pd_filtorder = int(lines[0])
-        self.pd_filter = np.array(map(float, lines[1:]))
+        pdfiltlines = pdfilt.split()
+        self.pd_filtorder = int(pdfiltlines[0])
+        self.pd_filter = np.array(map(float, pdfiltlines[1:]))
         self.pd_filterpointer = castdouble_np_flat_arr(self.pd_filter)
         # allocate buffers for ME vocoder's excitation signals
         self.xp_sig = FFI.new("double[]", self.me_filtorder)
         self.xn_sig = FFI.new("double[]", self.me_filtorder)
         self.hp = FFI.new("double[]", self.me_filtorder)
         self.hn = FFI.new("double[]", self.me_filtorder)
+        #flag to check whether some requests can be serviced
+        self.donesynth = False
 
     def __enter__(self):
         return self
@@ -119,16 +123,24 @@ class HTS_EngineME(object):
     def __exit__(self, type, value, traceback):
         LIBHTS.HTS_Engine_refresh(self.engine)
         LIBHTS.HTS_Engine_clear(self.engine)
-        #Other allocations get handled automatically by CFFI when out of scope
+        #Other allocations get free'd automatically by CFFI when out of scope
 
-    def synth(self, htslabel, use_labalignments=False, lf0=None):
+    def synth(self, htslabel, dur=None, lf0=None):
         """ htslabel is a sequence of strings...
         """
+        #prep label
+        if dur:
+            htslabel = label_add_durs(htslabel, dur)
+            use_labalignments = True
+        else:
+            use_labalignments = False
+        self.htslabel = htslabel
         htslabelc = []
         for line in htslabel:
             htslabelc.append(FFI.new("char[]", line))
         htslabelc = tuple(htslabelc)
-        if not lf0 is None:
+        #prep lf0 input
+        if lf0:
             ilf0_nframes = len(lf0)
             ilf0 = castdouble_np_flat_arr(lf0)
         else:
@@ -142,17 +154,10 @@ class HTS_EngineME(object):
                                                               self.xp_sig, self.xn_sig, self.hp, self.hn,
                                                               ilf0, ilf0_nframes)
         LIBHTS.HTS_Engine_set_phoneme_alignment_flag(self.engine, bytes(bytearray((self.HTS_FALSE,)))) #Reset...
+        self.donesynth = True
 
-    def _synth_with_dur(self, htslabel, dur=None, lf0=None):
-        if dur is not None:
-            htslabel = label_add_durs(htslabel, dur)
-            use_labalignments = True
-        else:
-            use_labalignments = False
-        self._synth(htslabel, use_labalignments=use_labalignments, lf0=lf0)
-
-    def synth_get_wav(self, htslabel, dur=None, lf0=None):
-        self._synth_with_dur(htslabel, dur, lf0)
+    def get_wav(self):
+        assert self.donesynth
         waveform = Waveform()
         waveform.samples = np.zeros(LIBHTS.HTS_Engine_get_nsamples(self.engine), np.int16) #16-bit samples
         waveform.samplerate = int(LIBHTS.HTS_Engine_get_sampling_frequency(self.engine))
@@ -161,8 +166,11 @@ class HTS_EngineME(object):
             waveform.samples[i] = LIBHTS.HTS_Engine_get_generated_speech(self.engine, i) #copy
         return waveform
 
-    def synth_get_parm(self, htslabel, parm, dur=None, lf0=None):
-        self._synth_with_dur(htslabel, dur, lf0)
+    def get_parm(self, parm):
+        """Can get generated parameter streams by index from HTS, we also
+           allow parm specification as defined in SPEECHPARMS...
+        """
+        assert self.donesynth
         if parm in self.SPEECHPARMS:
             parmidx = self.SPEECHPARMS[parm]
         else:
@@ -175,34 +183,63 @@ class HTS_EngineME(object):
                 x[i, j] = LIBHTS.HTS_Engine_get_generated_parameter(self.engine, parmidx, j, i) #copy
         return x
 
-    def synth_get_dur(self, htslabel):
-        self._synth(htslabel)
-        durs = np.zeros(len(htslabel), dtype=np.float64)
+    def get_dur(self):
+        assert self.donesynth
+        durs = np.zeros(len(self.htslabel), dtype=np.float64)
         states_per_model = LIBHTS.HTS_ModelSet_get_nstate(FFI.new("HTS_ModelSet *", self.engine.ms))
         statei = 0
-        for i in range(len(htslabel)):
+        for i in range(len(self.htslabel)):
             for j in range(states_per_model):
                 durs[i] += LIBHTS.HTS_SStreamSet_get_duration(FFI.new("HTS_SStreamSet *", self.engine.sss), statei)
                 statei += 1
         durs *= self.engine.condition.fperiod / LIBHTS.HTS_Engine_get_sampling_frequency(self.engine)
         return durs
 
+    def get_f0(self, log=False):
+        lf0 = self.get_parm("lf0")
+        if log:
+            return lf0.flatten()
+        else:
+            return tof0(lf0).flatten()
+        
 
 def maintest():
-    """Kinda brute-force method to check for memory leaks...
+    """Brute-force method to check for memory leaks...
     """
     import sys
     voicefn = sys.argv[1]
     mefiltfn = sys.argv[2]
     pdfiltfn = sys.argv[3]
     labfn = sys.argv[4]
+    with open(voicefn, "rb") as infh:
+        voice = infh.read()
+    with open(labfn) as infh:
+        label = infh.read().splitlines()
+    with open(mefiltfn) as infh:
+        mefilt = infh.read()
+    with open(pdfiltfn) as infh:
+        pdfilt = infh.read()
     while True:
         print(".", end="", file=sys.stderr)
-        with HTS_EngineME(voicefn, mefiltfn, pdfiltfn) as htsengine:
-            with open(labfn) as infh:
-                label = infh.read().splitlines()
+        with HTS_EngineME(voice, mefilt, pdfilt) as htsengine:
             htsengine.synth(label)
-
+            # import pylab as pl
+            # waveform = htsengine.get_wav()
+            # spectrum = htsengine.get_parm("mgc")
+            # bandpass = htsengine.get_parm("str")
+            # f0 = tof0(htsengine.get_f0("lf0"))
+            # durs = htsengine.get_dur()
+            # pl.subplot(511)
+            # pl.plot(waveform.samples)
+            # pl.subplot(512)
+            # pl.imshow(spectrum)
+            # pl.subplot(513)
+            # pl.imshow(bandpass)
+            # pl.subplot(514)
+            # pl.plot(f0)
+            # pl.subplot(515)
+            # pl.plot(durs)
+            # pl.show()
 
 if __name__ == "__main__":
     maintest()

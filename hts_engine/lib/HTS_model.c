@@ -1480,6 +1480,605 @@ HTS_Boolean HTS_ModelSet_load(HTS_ModelSet * ms, char **voices, size_t num_voice
    return !error;
 }
 
+/* HTS_ModelSet_load_fp: load model set from a single voice file -- from filepointer */
+HTS_Boolean HTS_ModelSet_load_fp(HTS_ModelSet * ms, HTS_File * fp)
+{
+   size_t i, j, k, s, e;
+   HTS_Boolean error = FALSE;
+   /*   HTS_File *fp;*/
+   char buff1[HTS_MAXBUFLEN];
+   char buff2[HTS_MAXBUFLEN];
+   size_t matched_size;
+
+   char **stream_type_list = NULL;
+
+   size_t *vector_length = NULL;
+   HTS_Boolean *is_msd = NULL;
+   size_t *num_windows = NULL;
+   HTS_Boolean *use_gv = NULL;
+
+   char *gv_off_context = NULL;
+
+   /* temporary values */
+   char *temp_hts_voice_version;
+   size_t temp_sampling_frequency;
+   size_t temp_frame_period;
+   size_t temp_num_states;
+   size_t temp_num_streams;
+   char *temp_stream_type;
+   char *temp_fullcontext_format;
+   char *temp_fullcontext_version;
+
+   char *temp_gv_off_context;
+
+   size_t *temp_vector_length;
+   HTS_Boolean *temp_is_msd;
+   size_t *temp_num_windows;
+   HTS_Boolean *temp_use_gv;
+   char **temp_option;
+
+   char *temp_duration_pdf;
+   char *temp_duration_tree;
+   char ***temp_stream_win;
+   char **temp_stream_pdf;
+   char **temp_stream_tree;
+   char **temp_gv_pdf;
+   char **temp_gv_tree;
+
+   long start_of_data;
+   HTS_File *pdf_fp = NULL;
+   HTS_File *tree_fp = NULL;
+   HTS_File **win_fp = NULL;
+   HTS_File *gv_off_context_fp = NULL;
+
+   size_t num_voices = 1;
+
+   HTS_ModelSet_clear(ms);
+
+   if (ms == NULL)
+      return FALSE;
+
+   ms->num_voices = num_voices;
+
+   for (i = 0; i < num_voices && error == FALSE; i++) {
+      /* open file */
+/*     fp = HTS_fopen_from_fn(voices[i], "rb"); */
+      if (fp == NULL) {
+         error = TRUE;
+         break;
+      }
+      /* reset GLOBAL options */
+      temp_hts_voice_version = NULL;
+      temp_sampling_frequency = 0;
+      temp_frame_period = 0;
+      temp_num_states = 0;
+      temp_num_streams = 0;
+      temp_stream_type = NULL;
+      temp_fullcontext_format = NULL;
+      temp_fullcontext_version = NULL;
+      temp_gv_off_context = NULL;
+      if (HTS_get_token_from_fp_with_separator(fp, buff1, '\n') != TRUE) {
+         error = TRUE;
+         break;
+      }
+      /* load GLOBAL options */
+      if (HTS_strequal(buff1, "[GLOBAL]") != TRUE) {
+         error = TRUE;
+         break;
+      }
+      while (1) {
+         if (HTS_get_token_from_fp_with_separator(fp, buff1, '\n') != TRUE) {
+            error = TRUE;
+            break;
+         }
+         if (HTS_strequal(buff1, "[STREAM]") == TRUE) {
+            break;
+         } else if (HTS_match_head_string(buff1, "HTS_VOICE_VERSION:", &matched_size) == TRUE) {
+            if (temp_hts_voice_version != NULL)
+               free(temp_hts_voice_version);
+            temp_hts_voice_version = HTS_strdup(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "SAMPLING_FREQUENCY:", &matched_size) == TRUE) {
+            temp_sampling_frequency = (size_t) atoi(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "FRAME_PERIOD:", &matched_size) == TRUE) {
+            temp_frame_period = (size_t) atoi(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "NUM_STATES:", &matched_size) == TRUE) {
+            temp_num_states = (size_t) atoi(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "NUM_STREAMS:", &matched_size) == TRUE) {
+            temp_num_streams = (size_t) atoi(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "STREAM_TYPE:", &matched_size) == TRUE) {
+            if (temp_stream_type != NULL)
+               free(temp_stream_type);
+            temp_stream_type = HTS_strdup(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "FULLCONTEXT_FORMAT:", &matched_size) == TRUE) {
+            if (temp_fullcontext_format != NULL)
+               free(temp_fullcontext_format);
+            temp_fullcontext_format = HTS_strdup(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "FULLCONTEXT_VERSION:", &matched_size) == TRUE) {
+            if (temp_fullcontext_version != NULL)
+               free(temp_fullcontext_version);
+            temp_fullcontext_version = HTS_strdup(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "GV_OFF_CONTEXT:", &matched_size) == TRUE) {
+            if (temp_gv_off_context != NULL)
+               free(temp_gv_off_context);
+            temp_gv_off_context = HTS_strdup(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "COMMENT:", &matched_size) == TRUE) {
+         } else {
+            HTS_error(0, "HTS_ModelSet_load: Unknown option %s.\n", buff1);
+         }
+      }
+      /* check GLOBAL options */
+      if (i == 0) {
+         ms->hts_voice_version = temp_hts_voice_version;
+         ms->sampling_frequency = temp_sampling_frequency;
+         ms->frame_period = temp_frame_period;
+         ms->num_states = temp_num_states;
+         ms->num_streams = temp_num_streams;
+         ms->stream_type = temp_stream_type;
+         ms->fullcontext_format = temp_fullcontext_format;
+         ms->fullcontext_version = temp_fullcontext_version;
+         gv_off_context = temp_gv_off_context;
+      } else {
+         if (HTS_strequal(ms->hts_voice_version, temp_hts_voice_version) != TRUE)
+            error = TRUE;
+         if (ms->sampling_frequency != temp_sampling_frequency)
+            error = TRUE;
+         if (ms->frame_period != temp_frame_period)
+            error = TRUE;
+         if (ms->num_states != temp_num_states)
+            error = TRUE;
+         if (ms->num_streams != temp_num_streams)
+            error = TRUE;
+         if (HTS_strequal(ms->stream_type, temp_stream_type) != TRUE)
+            error = TRUE;
+         if (HTS_strequal(ms->fullcontext_format, temp_fullcontext_format) != TRUE)
+            error = TRUE;
+         if (HTS_strequal(ms->fullcontext_version, temp_fullcontext_version) != TRUE)
+            error = TRUE;
+         if (HTS_strequal(gv_off_context, temp_gv_off_context) != TRUE)
+            error = TRUE;
+         if (temp_hts_voice_version != NULL)
+            free(temp_hts_voice_version);
+         if (temp_stream_type != NULL)
+            free(temp_stream_type);
+         if (temp_fullcontext_format != NULL)
+            free(temp_fullcontext_format);
+         if (temp_fullcontext_version != NULL)
+            free(temp_fullcontext_version);
+         if (temp_gv_off_context != NULL)
+            free(temp_gv_off_context);
+      }
+      /* find stream names */
+      if (i == 0) {
+         stream_type_list = (char **) HTS_calloc(ms->num_streams, sizeof(char *));
+         for (j = 0, matched_size = 0; j < ms->num_streams; j++) {
+            if (HTS_get_token_from_string_with_separator(ms->stream_type, &matched_size, buff2, ',') == TRUE) {
+               stream_type_list[j] = HTS_strdup(buff2);
+            } else {
+               stream_type_list[j] = NULL;
+               error = TRUE;
+            }
+         }
+      }
+      if (error != FALSE) {
+         HTS_fclose(fp);
+         break;
+      }
+      /* reset STREAM options */
+      temp_vector_length = (size_t *) HTS_calloc(ms->num_streams, sizeof(size_t));
+      for (j = 0; j < ms->num_streams; j++)
+         temp_vector_length[j] = 0;
+      temp_is_msd = (HTS_Boolean *) HTS_calloc(ms->num_streams, sizeof(HTS_Boolean));
+      for (j = 0; j < ms->num_streams; j++)
+         temp_is_msd[j] = FALSE;
+      temp_num_windows = (size_t *) HTS_calloc(ms->num_streams, sizeof(size_t));
+      for (j = 0; j < ms->num_streams; j++)
+         temp_num_windows[j] = 0;
+      temp_use_gv = (HTS_Boolean *) HTS_calloc(ms->num_streams, sizeof(HTS_Boolean));
+      for (j = 0; j < ms->num_streams; j++)
+         temp_use_gv[j] = FALSE;
+      temp_option = (char **) HTS_calloc(ms->num_streams, sizeof(char *));
+      for (j = 0; j < ms->num_streams; j++)
+         temp_option[j] = NULL;
+      /* load STREAM options */
+      while (1) {
+         if (HTS_get_token_from_fp_with_separator(fp, buff1, '\n') != TRUE) {
+            error = TRUE;
+            break;
+         }
+         if (strcmp(buff1, "[POSITION]") == 0) {
+            break;
+         } else if (HTS_match_head_string(buff1, "VECTOR_LENGTH[", &matched_size) == TRUE) {
+            if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ']') == TRUE) {
+               if (buff1[matched_size++] == ':') {
+                  for (j = 0; j < ms->num_streams; j++)
+                     if (strcmp(stream_type_list[j], buff2) == 0) {
+                        temp_vector_length[j] = (size_t) atoi(&buff1[matched_size]);
+                        break;
+                     }
+               }
+            }
+         } else if (HTS_match_head_string(buff1, "IS_MSD[", &matched_size) == TRUE) {
+            if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ']') == TRUE) {
+               if (buff1[matched_size++] == ':') {
+                  for (j = 0; j < ms->num_streams; j++)
+                     if (strcmp(stream_type_list[j], buff2) == 0) {
+                        temp_is_msd[j] = (buff1[matched_size] == '1') ? TRUE : FALSE;
+                        break;
+                     }
+               }
+            }
+         } else if (HTS_match_head_string(buff1, "NUM_WINDOWS[", &matched_size) == TRUE) {
+            if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ']') == TRUE) {
+               if (buff1[matched_size++] == ':') {
+                  for (j = 0; j < ms->num_streams; j++)
+                     if (strcmp(stream_type_list[j], buff2) == 0) {
+                        temp_num_windows[j] = (size_t) atoi(&buff1[matched_size]);
+                        break;
+                     }
+               }
+            }
+         } else if (HTS_match_head_string(buff1, "USE_GV[", &matched_size) == TRUE) {
+            if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ']') == TRUE) {
+               if (buff1[matched_size++] == ':') {
+                  for (j = 0; j < ms->num_streams; j++)
+                     if (strcmp(stream_type_list[j], buff2) == 0) {
+                        temp_use_gv[j] = (buff1[matched_size] == '1') ? TRUE : FALSE;
+                        break;
+                     }
+               }
+            }
+         } else if (HTS_match_head_string(buff1, "OPTION[", &matched_size) == TRUE) {
+            if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ']') == TRUE) {
+               if (buff1[matched_size++] == ':') {
+                  for (j = 0; j < ms->num_streams; j++)
+                     if (strcmp(stream_type_list[j], buff2) == 0) {
+                        if (temp_option[j] != NULL)
+                           free(temp_option[j]);
+                        temp_option[j] = HTS_strdup(&buff1[matched_size]);
+                        break;
+                     }
+               }
+            }
+         } else {
+            HTS_error(0, "HTS_ModelSet_load: Unknown option %s.\n", buff1);
+         }
+      }
+      /* check STREAM options */
+      if (i == 0) {
+         vector_length = temp_vector_length;
+         is_msd = temp_is_msd;
+         num_windows = temp_num_windows;
+         use_gv = temp_use_gv;
+         ms->option = temp_option;
+      } else {
+         for (j = 0; j < ms->num_streams; j++)
+            if (vector_length[j] != temp_vector_length[j])
+               error = TRUE;
+         for (j = 0; j < ms->num_streams; j++)
+            if (is_msd[j] != is_msd[j])
+               error = TRUE;
+         for (j = 0; j < ms->num_streams; j++)
+            if (num_windows[j] != temp_num_windows[j])
+               error = TRUE;
+         for (j = 0; j < ms->num_streams; j++)
+            if (use_gv[j] != temp_use_gv[j])
+               error = TRUE;
+         for (j = 0; j < ms->num_streams; j++)
+            if (HTS_strequal(ms->option[j], temp_option[j]) != TRUE)
+               error = TRUE;
+         free(temp_vector_length);
+         free(temp_is_msd);
+         free(temp_num_windows);
+         free(temp_use_gv);
+         for (j = 0; j < ms->num_streams; j++)
+            if (temp_option[j] != NULL)
+               free(temp_option[j]);
+         free(temp_option);
+      }
+      if (error != FALSE) {
+         HTS_fclose(fp);
+         break;
+      }
+      /* reset POSITION */
+      temp_duration_pdf = NULL;
+      temp_duration_tree = NULL;
+      temp_stream_win = (char ***) HTS_calloc(ms->num_streams, sizeof(char **));
+      for (j = 0; j < ms->num_streams; j++) {
+         temp_stream_win[j] = (char **) HTS_calloc(num_windows[j], sizeof(char *));
+         for (k = 0; k < num_windows[j]; k++)
+            temp_stream_win[j][k] = NULL;
+      }
+      temp_stream_pdf = (char **) HTS_calloc(ms->num_streams, sizeof(char *));
+      for (j = 0; j < ms->num_streams; j++)
+         temp_stream_pdf[j] = NULL;
+      temp_stream_tree = (char **) HTS_calloc(ms->num_streams, sizeof(char *));
+      for (j = 0; j < ms->num_streams; j++)
+         temp_stream_tree[j] = NULL;
+      temp_gv_pdf = (char **) HTS_calloc(ms->num_streams, sizeof(char *));
+      for (j = 0; j < ms->num_streams; j++)
+         temp_gv_pdf[j] = NULL;
+      temp_gv_tree = (char **) HTS_calloc(ms->num_streams, sizeof(char *));
+      for (j = 0; j < ms->num_streams; j++)
+         temp_gv_tree[j] = NULL;
+      /* load POSITION */
+      while (1) {
+         if (HTS_get_token_from_fp_with_separator(fp, buff1, '\n') != TRUE) {
+            error = TRUE;
+            break;
+         }
+         if (strcmp(buff1, "[DATA]") == 0) {
+            break;
+         } else if (HTS_match_head_string(buff1, "DURATION_PDF:", &matched_size) == TRUE) {
+            if (temp_duration_pdf != NULL)
+               free(temp_duration_pdf);
+            temp_duration_pdf = HTS_strdup(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "DURATION_TREE:", &matched_size) == TRUE) {
+            if (temp_duration_tree != NULL)
+               free(temp_duration_tree);
+            temp_duration_tree = HTS_strdup(&buff1[matched_size]);
+         } else if (HTS_match_head_string(buff1, "STREAM_WIN[", &matched_size) == TRUE) {
+            if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ']') == TRUE) {
+               if (buff1[matched_size++] == ':') {
+                  for (j = 0; j < ms->num_streams; j++) {
+                     if (strcmp(stream_type_list[j], buff2) == 0) {
+                        for (k = 0; k < num_windows[j]; k++) {
+                           if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ',') == TRUE)
+                              temp_stream_win[j][k] = HTS_strdup(buff2);
+                           else
+                              error = TRUE;
+                        }
+                        break;
+                     }
+                  }
+               }
+            }
+         } else if (HTS_match_head_string(buff1, "STREAM_PDF[", &matched_size) == TRUE) {
+            if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ']') == TRUE) {
+               if (buff1[matched_size++] == ':') {
+                  for (j = 0; j < ms->num_streams; j++) {
+                     if (strcmp(stream_type_list[j], buff2) == 0) {
+                        if (temp_stream_pdf[j] != NULL)
+                           free(temp_stream_pdf[j]);
+                        temp_stream_pdf[j] = HTS_strdup(&buff1[matched_size]);
+                        break;
+                     }
+                  }
+               }
+            }
+         } else if (HTS_match_head_string(buff1, "STREAM_TREE[", &matched_size) == TRUE) {
+            if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ']') == TRUE) {
+               if (buff1[matched_size++] == ':') {
+                  for (j = 0; j < ms->num_streams; j++) {
+                     if (strcmp(stream_type_list[j], buff2) == 0) {
+                        if (temp_stream_tree[j] != NULL)
+                           free(temp_stream_tree[j]);
+                        temp_stream_tree[j] = HTS_strdup(&buff1[matched_size]);
+                        break;
+                     }
+                  }
+               }
+            }
+         } else if (HTS_match_head_string(buff1, "GV_PDF[", &matched_size) == TRUE) {
+            if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ']') == TRUE) {
+               if (buff1[matched_size++] == ':') {
+                  for (j = 0; j < ms->num_streams; j++) {
+                     if (strcmp(stream_type_list[j], buff2) == 0) {
+                        if (temp_gv_pdf[j] != NULL)
+                           free(temp_gv_pdf[j]);
+                        temp_gv_pdf[j] = HTS_strdup(&buff1[matched_size]);
+                        break;
+                     }
+                  }
+               }
+            }
+         } else if (HTS_match_head_string(buff1, "GV_TREE[", &matched_size) == TRUE) {
+            if (HTS_get_token_from_string_with_separator(buff1, &matched_size, buff2, ']') == TRUE) {
+               if (buff1[matched_size++] == ':') {
+                  for (j = 0; j < ms->num_streams; j++) {
+                     if (strcmp(stream_type_list[j], buff2) == 0) {
+                        if (temp_gv_tree[j] != NULL)
+                           free(temp_gv_tree[j]);
+                        temp_gv_tree[j] = HTS_strdup(&buff1[matched_size]);
+                        break;
+                     }
+                  }
+               }
+            }
+         } else {
+            HTS_error(0, "HTS_ModelSet_load: Unknown option %s.\n", buff1);
+         }
+      }
+      /* check POSITION */
+      if (temp_duration_pdf == NULL)
+         error = TRUE;
+      for (j = 0; j < ms->num_streams; j++)
+         for (k = 0; k < num_windows[j]; k++)
+            if (temp_stream_win[j][k] == NULL)
+               error = TRUE;
+      for (j = 0; j < ms->num_streams; j++)
+         if (temp_stream_pdf[j] == NULL)
+            error = TRUE;
+      /* prepare memory */
+      if (i == 0) {
+         ms->duration = (HTS_Model *) HTS_calloc(num_voices, sizeof(HTS_Model));
+         for (j = 0; j < num_voices; j++)
+            HTS_Model_initialize(&ms->duration[j]);
+         ms->window = (HTS_Window *) HTS_calloc(ms->num_streams, sizeof(HTS_Window));
+         for (j = 0; j < ms->num_streams; j++)
+            HTS_Window_initialize(&ms->window[j]);
+         ms->stream = (HTS_Model **) HTS_calloc(num_voices, sizeof(HTS_Model *));
+         for (j = 0; j < num_voices; j++) {
+            ms->stream[j] = (HTS_Model *) HTS_calloc(ms->num_streams, sizeof(HTS_Model));
+            for (k = 0; k < ms->num_streams; k++)
+               HTS_Model_initialize(&ms->stream[j][k]);
+         }
+         ms->gv = (HTS_Model **) HTS_calloc(num_voices, sizeof(HTS_Model *));
+         for (j = 0; j < num_voices; j++) {
+            ms->gv[j] = (HTS_Model *) HTS_calloc(ms->num_streams, sizeof(HTS_Model));
+            for (k = 0; k < ms->num_streams; k++)
+               HTS_Model_initialize(&ms->gv[j][k]);
+         }
+      }
+      start_of_data = HTS_ftell(fp);
+      /* load duration */
+      pdf_fp = NULL;
+      tree_fp = NULL;
+      matched_size = 0;
+      if (HTS_get_token_from_string_with_separator(temp_duration_pdf, &matched_size, buff2, '-') == TRUE) {
+         s = (size_t) atoi(buff2);
+         e = (size_t) atoi(&temp_duration_pdf[matched_size]);
+         HTS_fseek(fp, (long) s, SEEK_CUR);
+         pdf_fp = HTS_fopen_from_fp(fp, e - s + 1);
+         HTS_fseek(fp, start_of_data, SEEK_SET);
+      }
+      matched_size = 0;
+      if (HTS_get_token_from_string_with_separator(temp_duration_tree, &matched_size, buff2, '-') == TRUE) {
+         s = (size_t) atoi(buff2);
+         e = (size_t) atoi(&temp_duration_tree[matched_size]);
+         HTS_fseek(fp, (long) s, SEEK_CUR);
+         tree_fp = HTS_fopen_from_fp(fp, e - s + 1);
+         HTS_fseek(fp, start_of_data, SEEK_SET);
+      }
+      if (HTS_Model_load(&ms->duration[i], pdf_fp, tree_fp, ms->num_states, 1, FALSE) != TRUE)
+         error = TRUE;
+      HTS_fclose(pdf_fp);
+      HTS_fclose(tree_fp);
+      /* load windows */
+      for (j = 0; j < ms->num_streams; j++) {
+         win_fp = (HTS_File **) HTS_calloc(num_windows[j], sizeof(HTS_File *));
+         for (k = 0; k < num_windows[j]; k++)
+            win_fp[k] = NULL;
+         for (k = 0; k < num_windows[j]; k++) {
+            matched_size = 0;
+            if (HTS_get_token_from_string_with_separator(temp_stream_win[j][k], &matched_size, buff2, '-') == TRUE) {
+               s = (size_t) atoi(buff2);
+               e = (size_t) atoi(&temp_stream_win[j][k][matched_size]);
+               HTS_fseek(fp, (long) s, SEEK_CUR);
+               win_fp[k] = HTS_fopen_from_fp(fp, e - s + 1);
+               HTS_fseek(fp, start_of_data, SEEK_SET);
+            }
+         }
+         if (HTS_Window_load(&ms->window[j], win_fp, num_windows[j]) != TRUE)
+            error = TRUE;
+         for (k = 0; k < num_windows[j]; k++)
+            HTS_fclose(win_fp[k]);
+         free(win_fp);
+      }
+      /* load streams */
+      for (j = 0; j < ms->num_streams; j++) {
+         pdf_fp = NULL;
+         tree_fp = NULL;
+         matched_size = 0;
+         if (HTS_get_token_from_string_with_separator(temp_stream_pdf[j], &matched_size, buff2, '-') == TRUE) {
+            s = (size_t) atoi(buff2);
+            e = (size_t) atoi(&temp_stream_pdf[j][matched_size]);
+            HTS_fseek(fp, (long) s, SEEK_CUR);
+            pdf_fp = HTS_fopen_from_fp(fp, e - s + 1);
+            HTS_fseek(fp, start_of_data, SEEK_SET);
+         }
+         matched_size = 0;
+         if (HTS_get_token_from_string_with_separator(temp_stream_tree[j], &matched_size, buff2, '-') == TRUE) {
+            s = (size_t) atoi(buff2);
+            e = (size_t) atoi(&temp_stream_tree[j][matched_size]);
+            HTS_fseek(fp, (long) s, SEEK_CUR);
+            tree_fp = HTS_fopen_from_fp(fp, e - s + 1);
+            HTS_fseek(fp, start_of_data, SEEK_SET);
+         }
+         if (HTS_Model_load(&ms->stream[i][j], pdf_fp, tree_fp, vector_length[j], num_windows[j], is_msd[j]) != TRUE)
+            error = TRUE;
+         HTS_fclose(pdf_fp);
+         HTS_fclose(tree_fp);
+      }
+      /* load GVs */
+      for (j = 0; j < ms->num_streams; j++) {
+         pdf_fp = NULL;
+         tree_fp = NULL;
+         matched_size = 0;
+         if (HTS_get_token_from_string_with_separator(temp_gv_pdf[j], &matched_size, buff2, '-') == TRUE) {
+            s = (size_t) atoi(buff2);
+            e = (size_t) atoi(&temp_gv_pdf[j][matched_size]);
+            HTS_fseek(fp, (long) s, SEEK_CUR);
+            pdf_fp = HTS_fopen_from_fp(fp, e - s + 1);
+            HTS_fseek(fp, start_of_data, SEEK_SET);
+         }
+         matched_size = 0;
+         if (HTS_get_token_from_string_with_separator(temp_gv_tree[j], &matched_size, buff2, '-') == TRUE) {
+            s = (size_t) atoi(buff2);
+            e = (size_t) atoi(&temp_gv_tree[j][matched_size]);
+            HTS_fseek(fp, (long) s, SEEK_CUR);
+            tree_fp = HTS_fopen_from_fp(fp, e - s + 1);
+            HTS_fseek(fp, start_of_data, SEEK_SET);
+         }
+         if (use_gv[j] == TRUE) {
+            if (HTS_Model_load(&ms->gv[i][j], pdf_fp, tree_fp, vector_length[j], 1, FALSE) != TRUE)
+               error = TRUE;
+         }
+         HTS_fclose(pdf_fp);
+         HTS_fclose(tree_fp);
+      }
+      /* free */
+      if (temp_duration_pdf != NULL)
+         free(temp_duration_pdf);
+      if (temp_duration_tree != NULL)
+         free(temp_duration_tree);
+      for (j = 0; j < ms->num_streams; j++) {
+         for (k = 0; k < num_windows[j]; k++)
+            if (temp_stream_win[j][k] != NULL)
+               free(temp_stream_win[j][k]);
+         free(temp_stream_win[j]);
+      }
+      free(temp_stream_win);
+      for (j = 0; j < ms->num_streams; j++)
+         if (temp_stream_pdf[j] != NULL)
+            free(temp_stream_pdf[j]);
+      free(temp_stream_pdf);
+      for (j = 0; j < ms->num_streams; j++)
+         if (temp_stream_tree[j] != NULL)
+            free(temp_stream_tree[j]);
+      free(temp_stream_tree);
+      for (j = 0; j < ms->num_streams; j++)
+         if (temp_gv_pdf[j] != NULL)
+            free(temp_gv_pdf[j]);
+      free(temp_gv_pdf);
+      for (j = 0; j < ms->num_streams; j++)
+         if (temp_gv_tree[j] != NULL)
+            free(temp_gv_tree[j]);
+      free(temp_gv_tree);
+      /* fclose */
+      HTS_fclose(fp);
+      if (error != FALSE)
+         break;
+   }
+
+   if (gv_off_context != NULL) {
+      sprintf(buff1, "GV-Off { %s }", gv_off_context);
+      gv_off_context_fp = HTS_fopen_from_data((void *) buff1, strlen(buff1) + 1);
+      ms->gv_off_context = (HTS_Question *) HTS_calloc(1, sizeof(HTS_Question));
+      HTS_Question_initialize(ms->gv_off_context);
+      HTS_Question_load(ms->gv_off_context, gv_off_context_fp);
+      HTS_fclose(gv_off_context_fp);
+      free(gv_off_context);
+   }
+
+   if (stream_type_list != NULL) {
+      for (i = 0; i < ms->num_streams; i++)
+         if (stream_type_list[i] != NULL)
+            free(stream_type_list[i]);
+      free(stream_type_list);
+   }
+
+   if (vector_length != NULL)
+      free(vector_length);
+   if (is_msd != NULL)
+      free(is_msd);
+   if (num_windows != NULL)
+      free(num_windows);
+   if (use_gv != NULL)
+      free(use_gv);
+
+   return !error;
+}
+
 /* HTS_ModelSet_get_sampling_frequency: get sampling frequency of HTS voices */
 size_t HTS_ModelSet_get_sampling_frequency(HTS_ModelSet * ms)
 {

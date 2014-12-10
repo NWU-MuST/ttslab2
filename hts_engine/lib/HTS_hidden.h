@@ -118,6 +118,9 @@ HTS_File *HTS_fopen_from_fn(const char *name, const char *opt);
 /* HTS_fopen_from_fp: wrapper for fopen */
 HTS_File *HTS_fopen_from_fp(HTS_File * fp, size_t size);
 
+/* HTS_fopen_from_stdio_fp: wrap FILE pointer in HTS_File */
+HTS_File *HTS_fopen_from_stdio_fp(FILE * infp);
+
 /* HTS_fopen_from_data: wrapper for fopen */
 HTS_File *HTS_fopen_from_data(void *data, size_t size);
 
@@ -202,6 +205,9 @@ void HTS_ModelSet_initialize(HTS_ModelSet * ms);
 
 /* HTS_ModelSet_load: load HTS voices */
 HTS_Boolean HTS_ModelSet_load(HTS_ModelSet * ms, char **voices, size_t num_voices);
+
+/* HTS_ModelSet_load_fp: load model set from a single voice file -- from filepointer */
+HTS_Boolean HTS_ModelSet_load_fp(HTS_ModelSet * ms, HTS_File * fp);
 
 /* HTS_ModelSet_get_sampling_frequency: get sampling frequency of HTS voices */
 size_t HTS_ModelSet_get_sampling_frequency(HTS_ModelSet * ms);
