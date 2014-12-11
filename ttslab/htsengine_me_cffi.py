@@ -125,15 +125,9 @@ class HTS_EngineME(object):
         LIBHTS.HTS_Engine_clear(self.engine)
         #Other allocations get free'd automatically by CFFI when out of scope
 
-    def synth(self, htslabel, dur=None, lf0=None):
+    def synth(self, htslabel, lf0=None, use_labalignments=False):
         """ htslabel is a sequence of strings...
         """
-        #prep label
-        if dur:
-            htslabel = label_add_durs(htslabel, dur)
-            use_labalignments = True
-        else:
-            use_labalignments = False
         self.htslabel = htslabel
         htslabelc = []
         for line in htslabel:

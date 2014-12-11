@@ -57,9 +57,9 @@ class Synthesizer(ttslab.synthesizer.Synthesizer):
                        i(phone_item),
                        j(phone_item)]
             if endtime is not None:
-                lab.append(b"%s %s " % (str(starttime).rjust(10), str(endtime).rjust(10)) + b"/".join(phlabel.encode("utf-8")))
+                lab.append("%s %s " % (str(starttime).rjust(10), str(endtime).rjust(10)) + "/".join(phlabel))
             else:
-                lab.append(b"/".join(phlabel))
+                lab.append("/".join(phlabel))
             starttime = endtime
         utt["hts_label"] = lab
         return utt
@@ -67,8 +67,12 @@ class Synthesizer(ttslab.synthesizer.Synthesizer):
     def synth(self, voice, utt, args):
         synthparms = args #not yet implemented...
         htslabel = "\n".join(utt["hts_label"]).encode("utf-8").splitlines()
+        if synthparms and "use_labalignments" in synthparms:
+            use_labalignments = True
+        else:
+            use_labalignments = False
         with HTS_EngineME(self.htsvoice_bin, self.mixfilter_bin, self.pdfilter_bin) as htsengine:
-            htsengine.synth(htslabel)
+            htsengine.synth(htslabel, use_labalignments=use_labalignments)
             utt["waveform"] = htsengine.get_wav()
             for segt, seg in zip(htsengine.get_segtimes(), utt.gr("Segment")):
                 seg["start"], seg["end"] = segt

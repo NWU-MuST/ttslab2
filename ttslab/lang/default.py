@@ -517,7 +517,7 @@ def phrasify_segments(owner, utt, args):
 
 ############################## DefaultVoice implementation
 class DefaultVoice(Voice):
-    def __init__(self, pronun=None, wavesynth=None):
+    def __init__(self, pronun=None, synthesizer=None):
         Voice.__init__(self)
         #required resources for pronunciation prediction, first key
         #specifies language
@@ -535,10 +535,10 @@ class DefaultVoice(Voice):
                                          "pronunaddendum": {}}}
             self.phones = None   #a dict: keys (phones) --> values (sets of phone features)
             self.phonemap = None #a dict: keys (phones) --> values (ASCII/HTK/HTS/etc. friendly representations)
-        if wavesynth:
-            self.wavesynth = wavesynth
+        if synthesizer:
+            self.synthesizer = synthesizer
         else:
-            self.wavesynth = None #Waveform synthesizer utterance processor
+            self.synthesizer = None #Waveform synthesizer utterance processor
 
     def _make_combined_phonesmaps(self):
         """Call this after assembling pronunciation resources...
@@ -577,9 +577,9 @@ class DefaultVoice(Voice):
             utt = self.phonetize_words(utt)
             utt = self.phrasify_segments(utt, args=self.pronun["main"]["phoneset"].features["silence_phone"])
         if processname in ["text-to-feats", "text-to-wave"]:
-            utt = self.wavesynth(utt, ("feats", synthparms))
+            utt = self.synthesizer(utt, ("feats", synthparms))
         if processname in ["text-to-wave"]:
-            utt = self.wavesynth(utt, ("synth", synthparms))
+            utt = self.synthesizer(utt, ("synth", synthparms))
         return utt
 
 #const data
