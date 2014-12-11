@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Default text processing stuff. The DefaultVoice implementation
    serves as a template to illustrate the intended use of utterance
-   processors etc. and structures assumed by a number of tools and
-   code in TTSLab.
+   processors etc. and structures/interfaces assumed by a number of
+   tools and code in TTSLab.
 
    The idea is that each language's text-processing frontend can take
    the generic fields and implementations from here and _compose_ its
@@ -123,8 +123,8 @@ def LETTERS_TO_WORDS(tokentext):
     l = []
     for i, c in enumerate(tokentext):
         l.append("char_" + "_".join(unicodedata.name(c).lower().split()))
-        if i < len(tokentext) - 1:
-            l.append("char_pause")
+        # if i < len(tokentext) - 1:
+        #     l.append("char_pause")
     return l
 
 def DATE_TO_WORDS(tokentext, num_expand):
@@ -561,9 +561,10 @@ class DefaultVoice(Voice):
                     raise
 
     def process(self, utt, args):
-        if not args in ["text-to-words", "text-to-segments", "text-to-wave"]:
-            raise Exception("Process not defined in voice: %s", args)
-        if args in ["text-to-words", "text-to-segments"]:
+        processname, synthparms = args
+        if not processname in ["text-to-words", "text-to-segments", "text-to-feats", "text-to-wave"]:
+            raise Exception("Process not defined in voice: %s", processname)
+        if processname in ["text-to-words", "text-to-segments", "text-to-feats", "text-to-wave"]:
             utt = self.standardize_text(utt, args=self.PUNCT_TRANSTABLE)
             utt = self.tokenize_text(utt)
             utt = self.normalize_tokens(utt) #also handles simple markup..
@@ -572,11 +573,13 @@ class DefaultVoice(Voice):
             if hasattr(self, 'decompound_words'):
                 utt = self.decompound_words(utt)
             utt = self.phrasify_words(utt)
-        if args in ["text-to-segments", "text-to-wave"]:
+        if processname in ["text-to-segments", "text-to-feats", "text-to-wave"]:
             utt = self.phonetize_words(utt)
             utt = self.phrasify_segments(utt, args=self.pronun["main"]["phoneset"].features["silence_phone"])
-        if args in ["text-to-wave"]:
-            utt = self.wavesynth(utt)
+        if processname in ["text-to-feats", "text-to-wave"]:
+            utt = self.wavesynth(utt, ("feats", synthparms))
+        if processname in ["text-to-wave"]:
+            utt = self.wavesynth(utt, ("synth", synthparms))
         return utt
 
 #const data

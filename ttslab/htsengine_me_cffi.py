@@ -195,6 +195,16 @@ class HTS_EngineME(object):
         durs *= self.engine.condition.fperiod / LIBHTS.HTS_Engine_get_sampling_frequency(self.engine)
         return durs
 
+    def get_segtimes(self):
+        assert self.donesynth
+        durs = self.get_dur()
+        starttime = 0.0
+        segtimes = []
+        for dur in durs:
+            segtimes.append([starttime, starttime+dur])
+            starttime += dur
+        return segtimes
+
     def get_f0(self, log=False):
         lf0 = self.get_parm("lf0")
         if log:

@@ -77,12 +77,12 @@ class Voice(object):
         return utt
 
     #################### User API:
-    def synthesize(self, inputstring, processname="text-to-wave"):
+    def synthesize(self, inputstring, processname="text-to-wave", synthparms=None):
         """ Render the inputstring...
         """
         utt = self._create_utterance()
         utt["inputtext"] = inputstring
-        utt = self.process(utt, processname)
+        utt = self.process(utt, (processname, synthparms))
         return utt
 
     #removed "resynthesize" function: we should now call voice.process directly

@@ -7,9 +7,9 @@ from __future__ import unicode_literals, division, print_function #Py2
 __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
-from . hts_labels import *
+from ttslab.synthesizers.hts_labels import *
 
-def b(segitem):
+def b(segitem, phones, phonemap):
     
     try:
         b1 = segitem.traverse("R:SylStructure.parent.F:stress")
@@ -74,12 +74,11 @@ def b(segitem):
 
     vowelname = NONE_STRING
     if segitem is not None:
-        voice = segitem.relation.utterance.voice
         try:
-            vowelnames = [ph for ph in voice.phones if "vowel" in voice.phones[ph]]
+            vowelnames = [ph for ph in phones if "vowel" in phones[ph]]
             for phname in [ph["name"] for ph in segitem.traverse("R:SylStructure.parent.M:get_daughters()")]:
                 if phname in vowelnames:
-                    vowelname = voice.phonemap[phname]
+                    vowelname = phonemap[phname]
                     break
             if vowelname is None: vowelname = NONE_STRING
         except hrg.TraversalError:

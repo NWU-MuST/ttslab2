@@ -40,17 +40,16 @@ def zero(s):
         return 0
     return s
 
-def p(segitem):
+def p(segitem, phonemap):
     
     segitem = segitem.get_item_in_relation("Segment")
-    voice = segitem.relation.utterance.voice
 
     try:
-        p1 = voice.phonemap[segitem.traverse("p.p.F:name")]
+        p1 = phonemap[segitem.traverse("p.p.F:name")]
     except hrg.TraversalError:
         p1 = NONE_STRING
     try:
-        p2 = voice.phonemap[segitem.traverse("p.F:name")]
+        p2 = phonemap[segitem.traverse("p.F:name")]
     except hrg.TraversalError:
         p2 = NONE_STRING
 
@@ -58,19 +57,18 @@ def p(segitem):
     if "hts_symbol" in segitem:
         p3 = segitem["hts_symbol"]
     else:
-        p3 = voice.phonemap[segitem["name"]]
+        p3 = phonemap[segitem["name"]]
 
     try:
-        p4 = voice.phonemap[segitem.traverse("n.F:name")]
+        p4 = phonemap[segitem.traverse("n.F:name")]
     except hrg.TraversalError:
         p4 = NONE_STRING
     try:
-        p5 = voice.phonemap[segitem.traverse("n.n.F:name")]
+        p5 = phonemap[segitem.traverse("n.n.F:name")]
     except hrg.TraversalError:
         p5 = NONE_STRING
     p6 = segitem.segpos_insyl_f()
     p7 = segitem.segpos_insyl_b()
-
 
     return "%s^%s-%s+%s=%s@%s_%s" % tuple(map(nonestring, (p1, p2, p3, p4, p5, p6, p7)))
 
@@ -93,7 +91,7 @@ def a(segitem):
     return "A:%s_%s_%s" % tuple(map(zero, (a1, a2, a3)))
 
 
-def b(segitem):
+def b(segitem, phones, phonemap):
     
     try:
         b1 = segitem.traverse("R:SylStructure.parent.F:stress")
@@ -158,12 +156,11 @@ def b(segitem):
 
     vowelname = NONE_STRING
     if segitem is not None:
-        voice = segitem.relation.utterance.voice
         try:
-            vowelnames = [ph for ph in voice.phones if "vowel" in voice.phones[ph]]
+            vowelnames = [ph for ph in phones if "vowel" in phones[ph]]
             for phname in [ph["name"] for ph in segitem.traverse("R:SylStructure.parent.M:get_daughters()")]:
                 if phname in vowelnames:
-                    vowelname = voice.phonemap[phname]
+                    vowelname = phonemap[phname]
                     break
             if vowelname is None: vowelname = NONE_STRING
         except hrg.TraversalError:
