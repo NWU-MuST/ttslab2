@@ -72,8 +72,6 @@ class TTSServer(object):
             log.error("Synthesis failed.")
             return b""
         log.info("Synthesis successful.")
-        with open("stest.wav", "wb") as outfh:
-            outfh.write(utt["waveform"].riffstring())
         return utt["waveform"].riffstring()
 
 class TTSHandler(threading.Thread): 
