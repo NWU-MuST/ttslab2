@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """ Functions to create HTS labels for synthesis...
     See: lab_format.pdf in reference HTS training scripts...
+
+    DEMITASSE: I have renamed the "syllable stress" feature to "tone"
 """
 from __future__ import unicode_literals, division, print_function #Py2
 
@@ -76,7 +78,7 @@ def p(segitem, phonemap):
 def a(segitem):
 
     try:
-        a1 = segitem.traverse("R:SylStructure.parent.R:Syllable.p.R:SylStructure.F:stress")
+        a1 = segitem.traverse("R:SylStructure.parent.R:Syllable.p.R:SylStructure.F:tone")
     except hrg.TraversalError:
         a1 = 0
     try:
@@ -94,7 +96,7 @@ def a(segitem):
 def b(segitem, phones, phonemap):
     
     try:
-        b1 = segitem.traverse("R:SylStructure.parent.F:stress")
+        b1 = segitem.traverse("R:SylStructure.parent.F:tone")
     except hrg.TraversalError:
         b1 = 0
     try:
@@ -122,11 +124,11 @@ def b(segitem, phones, phonemap):
     except hrg.TraversalError:
         b7 = 0
     try:
-        b8 = segitem.traverse("R:SylStructure.parent.M:numsylsbeforesyl_inphrase('stress', '1')")
+        b8 = segitem.traverse("R:SylStructure.parent.M:numsylsbeforesyl_inphrase('tone', '1')")
     except hrg.TraversalError:
         b8 = 0
     try:
-        b9 = segitem.traverse("R:SylStructure.parent.M:numsylsaftersyl_inphrase('stress', '1')")
+        b9 = segitem.traverse("R:SylStructure.parent.M:numsylsaftersyl_inphrase('tone', '1')")
     except hrg.TraversalError:
         b9 = 0
     try:
@@ -138,11 +140,11 @@ def b(segitem, phones, phonemap):
     except hrg.TraversalError:
         b11 = 0
     try:
-        b12 = segitem.traverse("R:SylStructure.parent.M:syldistprev('stress', '1')")
+        b12 = segitem.traverse("R:SylStructure.parent.M:syldistprev('tone', '1')")
     except hrg.TraversalError:
         b12 = 0
     try:
-        b13 = segitem.traverse("R:SylStructure.parent.M:syldistnext('stress', '1')")
+        b13 = segitem.traverse("R:SylStructure.parent.M:syldistnext('tone', '1')")
     except hrg.TraversalError:
         b13 = 0
     try:
@@ -176,7 +178,7 @@ def b(segitem, phones, phonemap):
 def c(segitem):
 
     try:
-        c1 = segitem.traverse("R:SylStructure.parent.R:Syllable.n.R:SylStructure.F:stress")
+        c1 = segitem.traverse("R:SylStructure.parent.R:Syllable.n.R:SylStructure.F:tone")
     except hrg.TraversalError:
         c1 = 0
     try:

@@ -361,7 +361,7 @@ GPOS = dict([(word, "prep") for word in PREPOSITIONS] +
             [(word, "aux") for word in AUXILIARY_VERBS] +
             [(word, "demit") for word in DEMIT])
 
-PHRASEBREAK_TOKENS = set(CONJUNCTIONS)
+PHRASEBREAK_TOKENS = set() #set(CONJUNCTIONS)
 
 
 ############################## Afrikaans voice frontend implementation
