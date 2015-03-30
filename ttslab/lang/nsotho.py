@@ -122,10 +122,10 @@ class Phoneset(ttslab.phoneset.Phoneset):
     def is_consonant(self, phonename):
         return "consonant" in self.phones[phonename]
 
-    def guess_syltonestress(self, syllables):
+    def guess_syltonestress(self, word, syllables):
         """ Try to guess tone pattern for an unknown word...
         """
-        return "L" * len(syllables)
+        return "0" * len(syllables)
 
     def syllabify(self, phonelist):
         """ Basic Sotho syllabification...

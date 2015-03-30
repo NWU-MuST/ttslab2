@@ -12,9 +12,6 @@ __email__ = "dvn.demitasse@gmail.com"
 class DuplicateItemInRelation(Exception):
     pass
 
-class TraversalError(Exception):
-    pass
-
 class ItemContent(object):
     """ Stores the actual features of an Item and keeps track of Items
         belonging to specific Relations...
@@ -509,7 +506,7 @@ def traverse(item, pathstring):
     try:
         return eval(cmdstring)
     except (TypeError, AttributeError):
-        raise TraversalError
+        return None
 
 def num_daughters(item):
     count = 0

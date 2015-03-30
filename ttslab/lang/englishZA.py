@@ -325,18 +325,54 @@ class Phoneset(ttslab.phoneset.Phoneset):
     def guess_syltonestress(self, word, syllables):
         """ Try to guess stress pattern for an unknown word...
         """
-        if len(syllables) == 1:
-            if "ə" not in syllables[0]:
-                return "1"
+        if len(syllables) == 1:                     # monosyllable always stressed
+            return "1"                              
+        elif len(syllables) == 2:                   # bi-syllable guess stress not on schwa
+            if "ə" in syllables[0] and "ə" not in syllables[1]:
+                return "01"
             else:
-                return "0"
+                return "10"
         else:
-            return "0" * len(syllables) #implement other cases later
+            return "1" + "0" * (len(syllables) - 1) # default stress on first syllable
 
 
+##############################        
+###Helper constants:
+
+#An approximation from Festival's "pos.scm"
+PREPOSITIONS = ["of", "for", "in", "on", "that", "with", "by", "at",
+                "from", "as", "if", "that", "against", "about",
+                "before", "because", "if", "under", "after", "over",
+                "into", "while", "without", "through", "new",
+                "between", "among", "until", "per", "up", "down",
+                "to"]
+DETERMINERS = ["the", "a", "an", "no", "some", "this", "that", "each",
+               "another", "those", "every", "all", "any", "these",
+               "both", "neither", "no", "many"]
+MODAL = ["will", "may", "would", "can", "could", "should", "must",
+         "ought", "might"]
+CONJUNCTIONS = ["and", "but", "or", "plus", "yet", "nor"]
+INTERROGATIVE_PRONOUNS = ["who", "what", "where", "how", "when"]
+PERSONAL_PRONOUNS = ["her", "his", "their", "its", "our", "their",
+                     "mine"]
+AUXILIARY_VERBS = ["is", "am", "are", "was", "were", "has", "have",
+                   "had", "be"]
+
+
+###Used directly in Voice implementation:
 ##############################
 SIMPLEMARKUP_MAP = {"^": ("prom", True)}      #word prominence tag
 REM_SIMPLEMARKUP_RE = re.compile("[%s]" % re.escape("".join(SIMPLEMARKUP_MAP.keys())))
+
+
+GPOS = dict([(word, "prep") for word in PREPOSITIONS] +
+            [(word, "det") for word in DETERMINERS] +
+            [(word, "md") for word in MODAL] +
+            [(word, "cc") for word in CONJUNCTIONS] +
+            [(word, "wp") for word in INTERROGATIVE_PRONOUNS] + 
+            [(word, "pps") for word in PERSONAL_PRONOUNS] +
+            [(word, "aux") for word in AUXILIARY_VERBS])
+
 
 #Only difference between this and the implementation in "default" is
 #that num_expanded words are not labelled as "english" lang.
@@ -357,10 +393,11 @@ class Voice(DefaultVoice):
 
 Voice.SIMPLEMARKUP_MAP = SIMPLEMARKUP_MAP
 Voice.REM_SIMPLEMARKUP_RE = REM_SIMPLEMARKUP_RE
+Voice.GPOS = GPOS
 Voice.langclass_words = simple_langclass_words
 
 if __name__ == "__main__":
-    from ttslab.lang.englishZA import DefaultVoice
+    from ttslab.lang.englishZA import Voice
     v = Voice()
     u = v.synthesize("I ask on 2009-11-12, at 20:41 in my report (A32X05 with a cost of R33.27) 3870 times and more: How does one say good-bye in ^Afrikaans?", "text-to-words")
     print(u)

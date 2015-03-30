@@ -329,7 +329,9 @@ class Phoneset(ttslab.phoneset.Phoneset):
     def guess_syltonestress(self, word, syllables):
         """ Try to guess stress pattern for an unknown word...
         """
-        return "0" * len(syllables) #implement soon
+        if len(syllables) == 1:                     # monosyllable always stressed
+            return "1"                              
+        return "0" * len(syllables)                 #implement a "default" soon -- this used for the current experiments
 
 
 ##############################        

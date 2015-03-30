@@ -216,6 +216,72 @@ def trim_zeros(track, front=True, back=True):
     track.values = values
     track.times = times
 
+# def extend_edge_values(track, front=True, back=True):
+#     """Lazy implementation...
+#     """
+#     if front:
+#         values = np.trim_zeros(track.values, trim="f")
+#         nzeros = len(track.values) - len(values)
+#         values = track.values.flatten()
+#         values[:nzeros] = values[nzeros]
+#     else:
+#         values = track.values.flatten()
+#     if back:
+#         values_ = np.trim_zeros(values, trim="b")
+#         nzeros = len(values) - len(values_)
+#         values[-nzeros:] = values[-nzeros-1]
+
+#     track.values = values.reshape((-1, 1))
+
+# def pad_edge_values(track, frontval=None, backval=None, front=True, back=True):
+#     """Lazy implementation... If values not given -- extend last nonzero
+#        value...
+#     """
+#     if front:
+#         values = np.trim_zeros(track.values, trim="f")
+#         nzeros = len(track.values) - len(values)
+#         values = track.values.flatten()
+#         if frontval is None:
+#             frontval = values[nzeros]
+#         values[:nzeros] = frontval
+#     else:
+#         values = track.values.flatten()
+#     if back:
+#         values_ = np.trim_zeros(values, trim="b")
+#         nzeros = len(values) - len(values_)
+#         if backval is None:
+#             backval = values[-nzeros-1]
+#         values[-nzeros:] = backval
+
+#     track.values = values.reshape((-1, 1))
+
+#     return frontval, backval
+
+def taper_edge_values(track, frontval=None, backval=None, front=True, back=True):
+    """Lazy implementation... If values not given -- extend last nonzero
+       value...
+    """
+    if front:
+        values = np.trim_zeros(track.values, trim="f")
+        nzeros = len(track.values) - len(values)
+        values = track.values.flatten()
+        if frontval is None:
+            frontval = values[nzeros]
+        tapvals = np.linspace(frontval, values[nzeros], nzeros)
+        values[:nzeros] = tapvals
+    else:
+        values = track.values.flatten()
+    if back:
+        values_ = np.trim_zeros(values, trim="b")
+        nzeros = len(values) - len(values_)
+        if backval is None:
+            backval = values[-nzeros-1]
+        tapvals = np.linspace(values[-nzeros-1], backval, nzeros)
+        values[-nzeros:] = tapvals
+
+    track.values = values.reshape((-1, 1))
+
+    return frontval, backval
 
 
 def _calc_ispline(track, ignore_zeros=False):

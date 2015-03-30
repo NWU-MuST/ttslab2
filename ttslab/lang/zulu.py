@@ -166,45 +166,46 @@ class Phoneset(ttslab.phoneset.Phoneset):
         """
         return "0" * len(syllables)
 
-#These are not all strictly conjunctions (some are motivated by
-#simple analysis of pauses between breath groups in the Lwazi2 TTS
-#corpus).
-PHRASEBREAK_TOKENS = set(["ukuti", #that, in order that
-                          "kuko", "kumbe", #or either
-                          "nokuba", "nakuba", #whether
-                          "noko", "kantinoko", #yet, however, notwithstanding, still,
-                          "kepa", #but
-                          "funa", #lest
-                          "ngokuba", #for, because
-                          "nxa", "inxa", "umauxa", #if
-                          "ngako", #therefore
-                          "njengoba", #because; since
-                          "kube", "ukube" #that; so that; in order that; if
-                          "sase", #and then
-                          # the following added based on stats from the Lwazi2 TTS corpus:
-                          "noma", #or either (38%)
-                          "bese", #and then (65%)
-                          "uma", #if (18%)
-                          "kufanele", # -fanele + sjnc. or inf. must; need to; have to; ought to; should (40%)
-                          "ukuze", #so that; in order that (40%)
-                          "futhi", #and (24%)
-                          "kanye", #once (34%)
-                          "kumele", #represent; stand for (30%)
-                          "kodwa", #only, excepting that (50%)
-                          "ukuthi", #so that; in order that (3%)
-                          "ngoba", #for, because (35%)
-                          "kanti", #whereas (50%)
-                          "ngaphandle", # ~ kwa-/kuka- apart from; besides; except; without; unless
-                          # ~ kwalokho apart from that; besides; otherwise (32%)
-                          "ngaphambi", #ahead; before; in front (33%)
-                          "lapho", #when, where (11%)
-                          "ukuba", #that; so that; in order that; if (12%)
-                          "nokuthi", #and; also; even to say (44%)
-                          "ikakhulukazi", "kakhulukazi" #especially; particularly; in particular (60%)
-                          "kuze", #so that; in order that (38%)
-                          "naye", #and him; and her; even he/him; even she/her; he too; she too; with him; with her (27%)
-                          "ngenxa" #~ ya- because of; on behalf of (21%)
-                      ])
+PHRASEBREAK_TOKENS = set()
+# #These are not all strictly conjunctions (some are motivated by
+# #simple analysis of pauses between breath groups in the Lwazi2 TTS
+# #corpus).
+# PHRASEBREAK_TOKENS = set(["ukuti", #that, in order that
+#                           "kuko", "kumbe", #or either
+#                           "nokuba", "nakuba", #whether
+#                           "noko", "kantinoko", #yet, however, notwithstanding, still,
+#                           "kepa", #but
+#                           "funa", #lest
+#                           "ngokuba", #for, because
+#                           "nxa", "inxa", "umauxa", #if
+#                           "ngako", #therefore
+#                           "njengoba", #because; since
+#                           "kube", "ukube" #that; so that; in order that; if
+#                           "sase", #and then
+#                           # the following added based on stats from the Lwazi2 TTS corpus:
+#                           "noma", #or either (38%)
+#                           "bese", #and then (65%)
+#                           "uma", #if (18%)
+#                           "kufanele", # -fanele + sjnc. or inf. must; need to; have to; ought to; should (40%)
+#                           "ukuze", #so that; in order that (40%)
+#                           "futhi", #and (24%)
+#                           "kanye", #once (34%)
+#                           "kumele", #represent; stand for (30%)
+#                           "kodwa", #only, excepting that (50%)
+#                           "ukuthi", #so that; in order that (3%)
+#                           "ngoba", #for, because (35%)
+#                           "kanti", #whereas (50%)
+#                           "ngaphandle", # ~ kwa-/kuka- apart from; besides; except; without; unless
+#                           # ~ kwalokho apart from that; besides; otherwise (32%)
+#                           "ngaphambi", #ahead; before; in front (33%)
+#                           "lapho", #when, where (11%)
+#                           "ukuba", #that; so that; in order that; if (12%)
+#                           "nokuthi", #and; also; even to say (44%)
+#                           "ikakhulukazi", "kakhulukazi" #especially; particularly; in particular (60%)
+#                           "kuze", #so that; in order that (38%)
+#                           "naye", #and him; and her; even he/him; even she/her; he too; she too; with him; with her (27%)
+#                           "ngenxa" #~ ya- because of; on behalf of (21%)
+#                       ])
 
 
 class Tokenizer(DefaultTokenizer):
@@ -212,7 +213,7 @@ class Tokenizer(DefaultTokenizer):
         splitchars = "-" + "".join(simplemarkupchars)
         temp = token
         temp = re.sub(r"(\w)([%s])(\w)" % re.escape(splitchars), "\\1 \\2\\3", temp, flags=re.UNICODE)
-        temp = re.sub(r"([a-z]+)([^a-z])", "\\1 \\2", temp, flags=re.UNICODE)
+        temp = re.sub(r"([a-z']+)([^a-z'])", "\\1 \\2", temp, flags=re.UNICODE)
         temp = temp.replace("-", "")
         #print(token, temp.split())
         return temp.split()

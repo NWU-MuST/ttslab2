@@ -547,7 +547,8 @@ class DefaultVoice(Voice):
         self.phones = self.pronun["main"]["phoneset"].phones.copy()
         for lang in self.pronun:
             if lang != "main":
-                self.phonemap.update([(lang + "_" + k, (lang + v).replace("_", "")) for k, v in self.pronun[lang]["phoneset"].map.iteritems()])
+                #use only first 2 chars of LANG in ASCII mapping and remove any underscores
+                self.phonemap.update([(lang + "_" + k, (lang[:2] + v).replace("_", "")) for k, v in self.pronun[lang]["phoneset"].map.iteritems()])
                 self.phones.update([(lang + "_" + k, v) for k, v in self.pronun[lang]["phoneset"].phones.iteritems()])
                 try:
                     assert len(self.phones) == len(self.phonemap)

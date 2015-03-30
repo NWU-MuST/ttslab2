@@ -57,7 +57,8 @@ class Synthesizer(ttslab.synthesizer.Synthesizer):
                        i(phone_item),
                        j(phone_item)]
             if endtime is not None:
-                lab.append("%s %s " % (str(starttime).rjust(10), str(endtime).rjust(10)) + "/".join(phlabel))
+                lab.append(" ".join([str(starttime), str(endtime), "/".join(phlabel)]))
+                #lab.append("%s %s " % (str(starttime).rjust(10), str(endtime).rjust(10)) + "/".join(phlabel))
             else:
                 lab.append("/".join(phlabel))
             starttime = endtime
@@ -66,7 +67,7 @@ class Synthesizer(ttslab.synthesizer.Synthesizer):
 
     def synth(self, voice, utt, args):
         synthparms = args #not yet implemented...
-        htslabel = "\n".join(utt["hts_label"]).encode("utf-8").splitlines()
+        htslabel = "\n".join(utt["hts_label"]).encode("utf-8").splitlines() #to utf-8 bytestring
         if synthparms and "use_labalignments" in synthparms:
             use_labalignments = True
         else:

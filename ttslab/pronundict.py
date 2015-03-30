@@ -68,7 +68,7 @@ class PronunciationDictionary(object):
                 if k in self.toned:
                     assert len(self.toned[k]) == len(self.sylld[k])
         except Exception as e:
-            print("Offending entry:", k)
+            print("OFFENDING ENTRY:", k)
             raise
 
     def check_against_phoneset(self, phset):
@@ -112,7 +112,7 @@ class PronunciationDictionary(object):
         else:
             k = word
         if k in self.toned:
-            return list(self.toned[k])
+            return self.toned[k]
         return None
 
     def toscmfile(self, fn, phonemap=None):

@@ -81,10 +81,10 @@ class Phoneset(ttslab.lang.englishZA.Phoneset):
                                                 self.features["wellformed_other_clusters"] +
                                                 self.features["wellformed_s_clusters"])
         self.features["silence_phone"] = "pau"
-        self.features["closure_phone"] = "pau_cl"
+        self.features["closure_phone"] = "paucl"
         self.phones = {"pau"    : set(["pause"]),
-                       "pau_cl" : set(["closure"]),
-                       "pau_gs" : set(["glottal-stop"]),
+                       "paucl" : set(["closure"]),
+                       "paugs" : set(["glottal-stop"]),
                        "aa" : set(["duration_short", "position_back", "height_low", "class_syllabic", "vowel", "class_sonorant"]),
                        "iy" : set(["position_front", "duration_long", "height_high", "class_syllabic", "vowel", "class_sonorant"]),
                        "ch" : set(["place_alveolar", "class_consonantal", "manner_affricate", "consonant", "manner_strident", "place_post-alveolar"]),
@@ -127,13 +127,23 @@ class Phoneset(ttslab.lang.englishZA.Phoneset):
                        }        
         self.map = dict((k, k) for k in self.phones) # redundant mapping
 
-    def guess_syltonestress(self, syllables):
+    def guess_syltonestress(self, word, syllables):
         """ Try to guess stress pattern for an unknown word...
         """
-        if len(syllables) == 1:
-            if "ah" not in syllables[0]: #schwa
-                return "1"
-            else:
-                return "0"
-        else:
-            return "0" * len(syllables) #implement other cases later
+        # if len(syllables) == 1:
+        #     if "ah" not in syllables[0]: #schwa
+        #         return "1"
+        #     else:
+        #         return "0"
+        # else:
+        return "0" * len(syllables) #implement other cases later
+
+
+
+
+
+if __name__ == "__main__":
+    from ttslab.lang.englishUS import Voice
+    v = Voice()
+    u = v.synthesize("I ask on 2009-11-12, at 20:41 in my report (A32X05 with a cost of R33.27) 3870 times and more: How does one say good-bye in ^Afrikaans?", "text-to-words")
+    print(u)

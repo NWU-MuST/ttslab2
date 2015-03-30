@@ -61,9 +61,8 @@ def sylpos_inphrase_f(sylitem):
     """ position of the current syllable in the current phrase (forward)
     """
     sylitem = sylitem.get_item_in_relation("SylStructure")
-    try:
-        phraseitem = sylitem.traverse("parent.R:Phrase.parent")
-    except TraversalError:
+    phraseitem = sylitem.traverse("parent.R:Phrase.parent")
+    if phraseitem is None:
         return 0
     syllist = syllistsylstructrel_inphrase(phraseitem)
     return syllist.index(sylitem) + 1
@@ -73,9 +72,8 @@ def sylpos_inphrase_b(sylitem):
     """ position of the current syllable in the current phrase (backward)
     """
     sylitem = sylitem.get_item_in_relation("SylStructure")
-    try:
-        phraseitem = sylitem.traverse("parent.R:Phrase.parent")
-    except TraversalError:
+    phraseitem = sylitem.traverse("parent.R:Phrase.parent")
+    if phraseitem is None:
         return 0
     syllist = syllistsylstructrel_inphrase(phraseitem)
     return len(syllist) - syllist.index(sylitem)
@@ -86,9 +84,8 @@ def numsylsbeforesyl_inphrase(sylitem, feat, featvalue):
         current phrase with 'feat' = 'featvalue'
     """
     sylitem = sylitem.get_item_in_relation("SylStructure")
-    try:
-        phraseitem = sylitem.traverse("parent.R:Phrase.parent")
-    except TraversalError:
+    phraseitem = sylitem.traverse("parent.R:Phrase.parent")
+    if phraseitem is None:
         return 0
     syllist = syllistsylstructrel_inphrase(phraseitem)
     idx = syllist.index(sylitem)
@@ -100,9 +97,8 @@ def numsylsaftersyl_inphrase(sylitem, feat, featvalue):
         current phrase with 'feat' = 'featvalue'
     """
     sylitem = sylitem.get_item_in_relation("SylStructure")
-    try:
-        phraseitem = sylitem.traverse("parent.R:Phrase.parent")
-    except TraversalError:
+    phraseitem = sylitem.traverse("parent.R:Phrase.parent")
+    if phraseitem is None:
         return 0
     syllist = syllistsylstructrel_inphrase(phraseitem)
     idx = syllist.index(sylitem)
@@ -170,7 +166,7 @@ def numwordsbeforeword_inphrase(worditem, feat, featvalue):
     return len([word for word in wordlist[:idx] if word[feat] == featvalue])
 
 
-def numsylsaftersyl_inphrase(worditem, feat, featvalue):
+def numwordsafterword_inphrase(worditem, feat, featvalue):
     """ the number of words after the current word in the
         current phrase with 'feat' = 'featvalue'
     """

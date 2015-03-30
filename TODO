@@ -1,10 +1,11 @@
  - Fix importing convention (relative/absolute)
 
- - Overhaul/refactor frontend: normalisation, language identification,
-   phonetisation, syllabification and stress/tone assignment -- after
-   Yoruba lessons learnt... (after PhD)
+ - Frontend overhaul done -- NEXT: Implement Yoruba voice
 
- - Consider moving some components (e.g. Yoruba tokenizer in
-   tokenizers.py)
+ - HTS backend overhaul done -- NEXT: Implement qTA backend
 
- - Work on hts_engine component using cffi.
+ - Implement standard training scripts for qTA voices
+
+ - Update/fix US backend and training scripts
+
+
