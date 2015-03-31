@@ -105,11 +105,12 @@ def b(segitem, phones, phonemap):
         vowelnames = [ph for ph in phones if "vowel" in phones[ph]]
         sylphones = segitem.traverse("R:SylStructure.parent.M:get_daughters()")
         if sylphones is None:
-            break
-        for phname in [ph["name"] for ph in sylphones]:
-            if phname in vowelnames:
-                vowelname = phonemap[phname]
-                break
+            pass
+        else:
+            for phname in [ph["name"] for ph in sylphones]:
+                if phname in vowelnames:
+                    vowelname = phonemap[phname]
+                    break
     b16 = vowelname
     
     return "B:%s-%s-%s@%s-%s&%s-%s#%s-%s$%s-%s!%s-%s;%s-%s|%s" % tuple(map(zero, (b1, b2, b3, b4,
