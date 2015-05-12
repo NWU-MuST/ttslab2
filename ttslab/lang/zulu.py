@@ -212,7 +212,7 @@ class Tokenizer(DefaultTokenizer):
     def _split_token(self, token, simplemarkupchars):
         splitchars = "-" + "".join(simplemarkupchars)
         temp = token
-        temp = re.sub(r"(\w)([%s])(\w)" % re.escape(splitchars), "\\1 \\2\\3", temp, flags=re.UNICODE)
+        temp = re.sub(r"(\w)([%s]+)(\w)" % re.escape(splitchars), "\\1 \\2\\3", temp, flags=re.UNICODE)
         temp = re.sub(r"([a-z']+)([^a-z'])", "\\1 \\2", temp, flags=re.UNICODE)
         temp = temp.replace("-", "")
         #print(token, temp.split())

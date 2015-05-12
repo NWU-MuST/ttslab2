@@ -167,5 +167,5 @@ class Phoneset(ttslab.phoneset.Phoneset):
         """
         return "0" * len(syllables)
 
-class Voice(ZuluVoice): #Ndebele is also a Nguni language...
+class Voice(ZuluVoice): #Ndebele is also a Nguni language... TODO: Separate Nguni from Zulu
     pass
