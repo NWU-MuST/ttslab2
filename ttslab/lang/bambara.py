@@ -6,6 +6,7 @@ __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
 import ttslab.phoneset
+from ttslab.lang.default import DefaultVoice
 
 class Phoneset(ttslab.phoneset.Phoneset):
     """ DEMITASSE: check again later when the phoneset/language is
@@ -140,3 +141,9 @@ class Phoneset(ttslab.phoneset.Phoneset):
 
 
 ############################## TODO: Implement Voice --> start with defining orthography
+VALID_GRAPHS = set("ɲɔɛabcdefghijklmnoprstuvwyz'qx") #specify only lowercase NFC -- used for pronunciation/language determination
+
+class Voice(DefaultVoice):
+    pass
+
+Voice.VALID_GRAPHS = VALID_GRAPHS

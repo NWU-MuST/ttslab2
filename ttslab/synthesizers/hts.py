@@ -17,7 +17,7 @@ import os
 
 import ttslab.synthesizer
 from ttslab.synthesizers.hts_labels import * #all feature funcs (p, a, b, ...) and htk number conversion
-from ttslab.htsengine_me_cffi import HTS_EngineME
+from ttslab.synthesizers.htsengine_me_cffi import HTS_EngineME
 
 class Synthesizer(ttslab.synthesizer.Synthesizer):
     """Simple HTS synthesizer implementation with "standard" labels. We

@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
-""" Contains a basic RELP-based unitselection synthesizer
-    implementation...
+"""Contains a basic RELP-based unit-selection synthesizer
+   implementation similar to the "MultiSyn" implementation in
+   Festival:
 
-    Need ways of documenting and ensuring requirements for
-    processors...
+   R. A. J. Clark, K. Richmond, and S. King, "Multisyn: Open-domain
+   unit selection for the Festival speech synthesis system," Speech
+   Communication, vol. 49, no. 4, pp. 317–330, 2007.
 
-    TODO:
-       - Modularize and clean up handling of certain parms such as
-         samplerate, samplewidth etc.
-       - Clean up implementation: Initially the Viterbi used joincost
-         and targetcost methods, however after optimisation, joinscore
-         calculation was integrated into selectunits method.
-       - Rewrite code to use only numpy arrays cleanly...
+   ---------
+   Need ways of documenting and ensuring requirements for
+   processors...
+
+   TODO:
+      - Modularize and clean up handling of certain parms such as
+        samplerate, samplewidth etc.
+      - Clean up implementation: Initially the Viterbi used joincost
+        and targetcost methods, however after optimisation, joinscore
+        calculation was integrated into selectunits method.
+      - Rewrite code to use only numpy arrays cleanly...
 """
 from __future__ import unicode_literals, division, print_function #Py2
 
@@ -25,9 +31,10 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 import ttslab
-from . uttprocessor import *
-from . waveform import Waveform
-from . relp import synth_filter
+from ttslab.waveform import Waveform
+
+import ttslab.synthesizer
+from ttslab.synthesizers.relp import synth_filter
 
 SAMPLERATE = 16000
 WINDOWFACTOR = 1
@@ -61,76 +68,64 @@ def window_residual(lpctrack, residual):
     return residuals
 
 
-class SynthesizerUS(UttProcessor):
-    """ 
-        Utt Requirements:
-                           ...
-                           ...
-        Provides:
-                           ...
+class Synthesizer(ttslab.synthesizer.Synthesizer):
+    """ Implementation with halfphone units... 
     """
-    def __init__(self, voice, unitcatalogue):
-        UttProcessor.__init__(self, voice=voice)
+    def __init__(self, unitcataloguefile=None):
+        if unitcataloguefile:
+            self._load_unitcatalogue(unitcataloguefile)
 
-        self.unitcatalogue = unitcatalogue
-
-        self.processes = {"targetunits": OrderedDict([("targetunits", None)]),
-                          "selectunits": OrderedDict([("targetunits", None),
-                                                       ("selectunits", None)]),
-                          "synth": OrderedDict([("targetunits", None),
-                                                 ("selectunits", None),
-                                                 ("concat_relpsynth", None)])}
+    def _load_unitcatalogue(self, unitcataloguefile):
+        self.unitcatalogue = ttslab.fromfile(unitcataloguefile)
 
 
-    #################### Lower level methods...
-    def concat_relpsynth(self, utt, processname):
-        """ Concatenates units and produces waveform via residual
-            excited LPC synthesis filter...
+    def feats(self, voice, utt, args):
+        """ Create target units for synthesis.. (halfphones)
         """
-        
-        unit_rel = utt.get_relation("Unit")
-        if unit_rel is None:
-            print("\n".join([self.concat_relpsynth,
-                             "\nError: Utterance needs to have 'Unit' relation..."]))
-            return
-        
-        #concat:
-        unit_item = unit_rel.head_item
-        lpctrack = copy.deepcopy(unit_item["selected_unit"]["candidate"]["lpc-coefs"])
-        residuals = window_residual(unit_item["selected_unit"]["candidate"]["lpc-coefs"],
-                                    unit_item["selected_unit"]["candidate"]["residuals"])
-        unit_item = unit_item.next_item
-        while unit_item is not None:
-            temptrack = unit_item["selected_unit"]["candidate"]["lpc-coefs"]
-            #append lpccoefs to lpctrack:
-            lpctrack.times = np.concatenate((lpctrack.times, (temptrack.times + lpctrack.times[-1])))
-            lpctrack.values = np.concatenate((lpctrack.values, temptrack.values))
-            #append windowed residuals:
-            residuals.extend(window_residual(temptrack,
-                                             unit_item["selected_unit"]["candidate"]["residuals"]))
-            unit_item = unit_item.next_item
-        
-        #overlap add residual:
-        lastsample = int(round(lpctrack.times[-1] * SAMPLERATE)) + int(round(len(residuals[-1]) / 2))
-        residual = np.zeros(lastsample + 1)
+        unit_rel = utt.new_relation("Unit")
+        seglist = utt.get_relation("Segment").as_list()
+        for i, seg in enumerate(seglist):
+            #determine relevant unit features...
+            num_syls_in_word = self._countsyls(seg)
+            position_in_syl = self._getsylposition(seg)
+            position_in_word = self._getwordposition(seg)
+            position_in_phrase = self._getphraseposition(seg)
+            context_nextsegment = seg.traverse("n.F:name") #can be None
+            context_prevsegment = seg.traverse("p.F:name") #can be None
 
-        for i, time in enumerate(lpctrack.times):
-            centersample = int(round(time * SAMPLERATE))
-            firstsample = centersample - int(len(residuals[i]) / 2)
-            residual[firstsample:firstsample+len(residuals[i])] += np.array(residuals[i])
+            # #don't do unnecessary "pau" joins at start of utterance:
+            if not (i == 0 and seg["name"] == "pau"):
+                lunit_item = unit_rel.append_item()
+                lunit_item["name"] = "left-" + seg["name"]
+                seg.add_daughter(lunit_item)
+                lunit_item["num_syls"] = num_syls_in_word
+                lunit_item["position_in_syl"] = position_in_syl
+                lunit_item["position_in_word"] = position_in_word
+                lunit_item["position_in_phrase"] = position_in_phrase
+                lunit_item["context_nextsegment"] = context_nextsegment
+                lunit_item["context_prevsegment"] = context_prevsegment
 
-        #synth filter:
-        samples = synth_filter(lpctrack.times, lpctrack.values, residual.astype(np.float), SAMPLERATE)
-
-        #save in utterance:
-        w = Waveform()
-        w.samplerate = SAMPLERATE
-        w.samples = samples.astype("int16") #16bit samples
-        w.channels = 1
-        utt["waveform"] = w
+            # #don't do unnecessary "pau" joins at end of utterance:
+            if not (i == len(seglist) - 1 and seg["name"] == "pau"):
+                runit_item = unit_rel.append_item()
+                runit_item["name"] = "right-" + seg["name"]
+                seg.add_daughter(runit_item)
+                runit_item["num_syls"] = num_syls_in_word
+                runit_item["position_in_syl"] = position_in_syl
+                runit_item["position_in_word"] = position_in_word
+                runit_item["position_in_phrase"] = position_in_phrase
+                runit_item["context_nextsegment"] = context_nextsegment
+                runit_item["context_prevsegment"] = context_prevsegment
         return utt
 
-    def selectunits(self, utt, processname):
+    
+    def synth(self, voice, utt, args):
+        utt = self._selectunits(utt, args)
+        utt = self._concatunits(utt, args)
+        return utt
+
+    #################### Lower level synth methods...
+    def _selectunits(self, utt, args):
         """ Does a Viterbi search given the target Utterance and
             unitcatalogue, using the joinscore and targetscore
             functions defined... Update: joinscore calculation
@@ -138,10 +133,6 @@ class SynthesizerUS(UttProcessor):
         """
 
         unit_rel = utt.get_relation("Unit")
-        if unit_rel is None:
-            print("\n".join([self.selectunits,
-                             "\nError: Utterance needs to have 'Unit' relation..."]))
-            return
 
         prunescoredelta = 0.01
         prunenumcands = 100
@@ -165,7 +156,7 @@ class SynthesizerUS(UttProcessor):
             scorematrix = 6 / (distmatrix + 6)
             #calc targetscores, combine with joinscores and save in trellis
             currentnode = []
-            targetscores_i = np.array([self.targetscore(unit_item, nextcandidate) for
+            targetscores_i = np.array([self._targetscore(unit_item, nextcandidate) for
                                        nextcandidate in self.unitcatalogue[unit_item["name"]]])
             prevtotalscores_j = np.array([prevcandidate["total_score"] for prevcandidate in trellis[-1]])
             for i in range(len(self.unitcatalogue[unit_item["name"]])):
@@ -193,11 +184,11 @@ class SynthesizerUS(UttProcessor):
 
             # nodes = []
             # for nextcandidate in self.unitcatalogue[unit_item["name"]]:
-            #     targetscore = self.targetscore(unit_item, nextcandidate)
+            #     targetscore = self._targetscore(unit_item, nextcandidate)
             #     total_scores = []
             #     for prevcandidate in trellis[-1]:
             #         total_scores.append(prevcandidate["total_score"] +
-            #                             targetscore * self.joinscore(prevcandidate["candidate"], nextcandidate))
+            #                             targetscore * self._joinscore(prevcandidate["candidate"], nextcandidate))
             #     nodes.append({"candidate": nextcandidate,
             #                   "prevcandidate": np.argmax(total_scores),
             #                   "total_score": np.max(total_scores)})
@@ -234,60 +225,52 @@ class SynthesizerUS(UttProcessor):
 
         return utt
 
-    def targetunits(self, utt, processname):
-        """ Create target units for synthesis.. (halfphones)
+    
+    def _concatunits(self, utt, args):
+        """ Concatenates units and produces waveform via residual
+            excited LPC synthesis filter...
         """
-        seg_rel = utt.get_relation("Segment")
-        if seg_rel is None:
-            print("\n".join([self.targetunits,
-                             "\nError: Utterance needs to have 'Segment' relation..."]))
-            return
         
-        unit_rel = utt.new_relation("Unit")
-        seglist = utt.get_relation("Segment").as_list()
-        for i, seg in enumerate(seglist):
-            #determine relevant unit features...
-            num_syls_in_word = self.countsyls(seg)
-            position_in_syl = self.getsylposition(seg)
-            position_in_word = self.getwordposition(seg)
-            position_in_phrase = self.getphraseposition(seg)
-            try:
-                context_nextsegment = seg.next_item["name"]
-            except TypeError:
-                context_nextsegment = None
-            try:
-                context_prevsegment = seg.prev_item["name"]
-            except TypeError:
-                context_prevsegment = None
+        unit_rel = utt.get_relation("Unit")
+        #concat:
+        unit_item = unit_rel.head_item
+        lpctrack = copy.deepcopy(unit_item["selected_unit"]["candidate"]["lpc-coefs"])
+        residuals = window_residual(unit_item["selected_unit"]["candidate"]["lpc-coefs"],
+                                    unit_item["selected_unit"]["candidate"]["residuals"])
+        unit_item = unit_item.next_item
+        while unit_item is not None:
+            temptrack = unit_item["selected_unit"]["candidate"]["lpc-coefs"]
+            #append lpccoefs to lpctrack:
+            lpctrack.times = np.concatenate((lpctrack.times, (temptrack.times + lpctrack.times[-1])))
+            lpctrack.values = np.concatenate((lpctrack.values, temptrack.values))
+            #append windowed residuals:
+            residuals.extend(window_residual(temptrack,
+                                             unit_item["selected_unit"]["candidate"]["residuals"]))
+            unit_item = unit_item.next_item
+        
+        #overlap add residual:
+        lastsample = int(round(lpctrack.times[-1] * SAMPLERATE)) + int(round(len(residuals[-1]) / 2))
+        residual = np.zeros(lastsample + 1)
 
-            # #don't do unnecessary "pau" joins at start of utterance:
-            if not (i == 0 and seg["name"] == "pau"):
-                lunit_item = unit_rel.append_item()
-                lunit_item["name"] = "left-" + seg["name"]
-                seg.add_daughter(lunit_item)
-                lunit_item["num_syls"] = num_syls_in_word
-                lunit_item["position_in_syl"] = position_in_syl
-                lunit_item["position_in_word"] = position_in_word
-                lunit_item["position_in_phrase"] = position_in_phrase
-                lunit_item["context_nextsegment"] = context_nextsegment
-                lunit_item["context_prevsegment"] = context_prevsegment
+        for i, time in enumerate(lpctrack.times):
+            centersample = int(round(time * SAMPLERATE))
+            firstsample = centersample - int(len(residuals[i]) / 2)
+            residual[firstsample:firstsample+len(residuals[i])] += np.array(residuals[i])
 
-            # #don't do unnecessary "pau" joins at end of utterance:
-            if not (i == len(seglist) - 1 and seg["name"] == "pau"):
-                runit_item = unit_rel.append_item()
-                runit_item["name"] = "right-" + seg["name"]
-                seg.add_daughter(runit_item)
-                runit_item["num_syls"] = num_syls_in_word
-                runit_item["position_in_syl"] = position_in_syl
-                runit_item["position_in_word"] = position_in_word
-                runit_item["position_in_phrase"] = position_in_phrase
-                runit_item["context_nextsegment"] = context_nextsegment
-                runit_item["context_prevsegment"] = context_prevsegment
+        #synth filter:
+        samples = synth_filter(lpctrack.times, lpctrack.values, residual.astype(np.float), SAMPLERATE)
+
+        #save in utterance:
+        w = Waveform()
+        w.samplerate = SAMPLERATE
+        w.samples = samples.astype("int16") #16bit samples
+        w.channels = 1
+        utt["waveform"] = w
         return utt
 
 
-    #################### Lower lower level methods...
-    def countsyls(self, segitem):
+    #################### "Feature functions" -- for HTS this is in hts_label.py...
+    def _countsyls(self, segitem):
         """ Determine the number of syllables of the Word to which
             this Segment belongs...
         """
@@ -302,7 +285,7 @@ class SynthesizerUS(UttProcessor):
                 syl_item = syl_item.next_item
             return counter
         
-    def getsylposition(self, segitem):
+    def _getsylposition(self, segitem):
         """ Determine the position of a Segment in its parent
             Syllable..
         """
@@ -316,7 +299,7 @@ class SynthesizerUS(UttProcessor):
         elif not seg_in_sylstructure.next_item and seg_in_sylstructure.prev_item:
             return "final"
     
-    def getwordposition(self, segitem):
+    def _getwordposition(self, segitem):
         """ Determine the position of the Segment's parent Syllable in
             the Word to which they belong..
         """
@@ -332,7 +315,7 @@ class SynthesizerUS(UttProcessor):
             elif not syl_item.next_item and syl_item.prev_item:
                 return "final"
 
-    def getphraseposition(self, segitem):
+    def _getphraseposition(self, segitem):
         """ Determine the position of the Segment's Word in the Phrase
             to which they belong..
         """
@@ -348,7 +331,7 @@ class SynthesizerUS(UttProcessor):
             elif not word_item.next_item and word_item.prev_item:
                 return "final"
         
-    def targetscore(self, targetunit, candidateunit):
+    def _targetscore(self, targetunit, candidateunit):
         """ Calculates a (crude) value representing a level of match
             between target and candidate units, based on linguistic
             questions... value range: [0.0, 1.0]
@@ -375,7 +358,7 @@ class SynthesizerUS(UttProcessor):
             score += 1.0
         return score / 6.0
 
-    # def joinscore(self, unit1, unit2):
+    # def _joinscore(self, unit1, unit2):
     #     """ Calculates a value representing a level of match between
     #         two consecutive candidate units based on acoustic
     #         similarity.. value range: (0.0, 1.0]
@@ -389,46 +372,3 @@ class SynthesizerUS(UttProcessor):
 
     #     #6 is a scaling factor...
     #     return 6 / (6 + euclidian_distance)
-
-
-class SynthesizerUSWordUnits(SynthesizerUS):        
-
-    def targetunits(self, utt, processname):
-        """ Create target units for synthesis.. (words)
-        """
-        
-        unit_rel = utt.new_relation("Unit")
-
-        wordseq = utt.gr("Word").as_list()
-        for i, word in enumerate(wordseq):
-            try:
-                context_nextword = word.next_item["name"]
-            except TypeError:
-                context_nextword = None 
-            try:
-                context_prevword = word.prev_item["name"]
-            except TypeError:
-                context_prevword = None
-            
-            unit_item = unit_rel.append_item()
-            unit_item["name"] = word["name"]
-            unit_item["context_prevword"] = context_prevword
-            unit_item["context_nextword"] = context_nextword
-                
-        return utt
-
-    #################### Lower lower level methods...
-        
-    def targetscore(self, targetunit, candidateunit):
-        """ Calculates a (crude) value representing a level of match
-            between target and candidate units, based on linguistic
-            questions... value range: [0.0, 1.0]
-        """
-        score = 0.0
-
-        if targetunit["context_prevword"] == candidateunit["context_prevword"]:
-            score += 0.5
-        if targetunit["context_nextword"] == candidateunit["context_nextword"]:
-            score += 0.5
-        
-        return score
