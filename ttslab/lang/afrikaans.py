@@ -384,7 +384,7 @@ def FLOAT_TO_WORDS(f, num_expand):
     return w
 
 def CURR_TO_WORDS(m, num_expand):
-    template = {"r": "%(curr)s rand en %(cents)s",
+    template = {"r": "%(curr)s rand %(cents)s",
                 "$": "%(curr)s dollar %(cents)s",
                 "£": "%(curr)s pond %(cents)s",
                 "€": "%(curr)s euro %(cents)s",
@@ -397,7 +397,7 @@ def CURR_TO_WORDS(m, num_expand):
     if groups[2]:
         i = int(groups[2][1:])
         if i:
-            d["cents"] = "%s sent" % num_expand(i)
+            d["cents"] = "en %s sent" % num_expand(i)
         else:
             d["cents"] = ""
     else:

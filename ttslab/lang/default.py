@@ -112,7 +112,7 @@ def CURR_TO_WORDS(m, num_expand):
     if groups[2]:
         i = int(groups[2][1:])
         if i:
-            d["cents"] = "%s cents" % num_expand(i)
+            d["cents"] = "and %s cents" % num_expand(i)
         else:
             d["cents"] = ""
     else:
