@@ -3,3 +3,5 @@
 *~
 __pycache__
 hts_engine/build
+ttslab/synthesizers/relp.c
+ttslab/synthesizers/relp.so
