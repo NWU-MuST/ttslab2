@@ -36,4 +36,3 @@ class Synthesizer(UttProcessor):
         if processname in ["synth"]:
             utt = self.synth(voice, utt, synthparms)
         return utt
-

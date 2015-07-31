@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-""" Implements a number of functions used to produce the contextual
-    information necessary to create HTS labels for synthesis...
+"""Implements a number of functions used to produce the contextual
+    information necessary to create models for synthesis... e.g. to
+    produce HTS labels...
 """
 from __future__ import unicode_literals, division, print_function #Py2
 
@@ -211,16 +212,41 @@ def worddistnext(worditem, feat, featvalue):
 
 
 def phrasepos_inutt_f(phraseitem):
-    """ position of the current phrase in utterence (forward)
+    """ position of the current phrase in utterance (forward)
     """
     phraselist = phraseitem.relation.utterance.get_relation("Phrase").as_list()
     return phraselist.index(phraseitem) + 1
 
 
 def phrasepos_inutt_b(phraseitem):
-    """ position of the current phrase in utterence (backward)
+    """ position of the current phrase in utterance (backward)
     """
     phraselist = phraseitem.relation.utterance.get_relation("Phrase").as_list()
     return len(phraselist) - phraselist.index(phraseitem)
 
+###
+
+def sylsegsstructure(sylitem, vowels):
+    sylitem = sylitem.gir("SylStructure")
+    segs = [seg["name"] for seg in sylitem.get_daughters()]
+    onset = []
+    vowel = ""
+    for i, seg in enumerate(segs):
+        if seg in vowels:
+            vowel = seg
+            break
+        onset.append(seg)
+    assert vowel
+    nucleus = seg
+    if i < len(segs) - 1:
+        coda = segs[i+1:]
+    else:
+        coda = []
+    try:
+        assert not set(vowels).intersection(coda)
+    except AssertionError:
+        import sys
+        utt = sylitem.relation.utterance
+        print("WARNING: Strange syllable coda found in", utt["file_id"], ":", " ".join(coda).encode("utf-8"), file=sys.stderr)
+    return "".join(onset) or None, vowel, "".join(coda) or None
 

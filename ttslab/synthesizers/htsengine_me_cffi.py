@@ -134,7 +134,7 @@ class HTS_EngineME(object):
             htslabelc.append(FFI.new("char[]", line))
         htslabelc = tuple(htslabelc)
         #prep lf0 input
-        if lf0:
+        if lf0 is not None:
             ilf0_nframes = len(lf0)
             ilf0 = castdouble_np_flat_arr(lf0)
         else:

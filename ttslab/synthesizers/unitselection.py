@@ -25,7 +25,6 @@ __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
 import copy
-from collections import OrderedDict
 
 import numpy as np
 from scipy.spatial.distance import cdist

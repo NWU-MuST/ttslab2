@@ -6,7 +6,6 @@
 
    UttProcessor instances MUST STAY CONSTANT DURING SYNTHESIS and be
    instantiated by loading all the required data.
-
 """
 from __future__ import unicode_literals, division, print_function #Py2
 

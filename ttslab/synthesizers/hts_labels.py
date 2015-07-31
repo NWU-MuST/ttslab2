@@ -11,7 +11,7 @@ __email__ = "dvn.demitasse@gmail.com"
 
 import ttslab
 import ttslab.hrg as hrg
-ttslab.extend(hrg.Item, "ttslab.funcs.ifuncs_hts")
+ttslab.extend(hrg.Item, "ttslab.ifuncs.synthcontext")
 
 NONE_STRING = "xxx"
 

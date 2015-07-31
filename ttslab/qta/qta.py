@@ -35,7 +35,7 @@ import ttslab
 from ttslab.trackfile import Track
 ttslab.extend(Track, "ttslab.trackfile.funcs.tfuncs_praat")
 from ttslab.hrg import Utterance
-ttslab.extend(Utterance, "ufuncs_analysis")
+ttslab.extend(Utterance, "ttslab.ufuncs.analysis")
 
 from qta_sylcontour import sylcontour
 # def sylcontour(t, m, b, p0, dp0, ddp0, l):
@@ -273,7 +273,6 @@ def synth2(startpitch, synthparms, numpoints=100, plot=False, minlambd=10.0, dla
     return synthtrack
 
 
-
 def qta_annotate_utt(utt, f0, qtaspecs=DEF_QTASPECS):
     utt[QTAPREFIX + "_specs"] = qtaspecs
     for phr in utt.gr("Phrase"):
@@ -301,7 +300,7 @@ def qta_annotate_utt(utt, f0, qtaspecs=DEF_QTASPECS):
     return utt
 
 
-def qta_synth_utt(utt):
+def qta_synth_utt(utt, synthfunc=synth):
     times = np.array([])
     values = np.array([])
     for phr in utt.gr("Phrase"):
@@ -309,7 +308,7 @@ def qta_synth_utt(utt):
         for word in phr.get_daughters():
             for syl in word.gir("SylStructure").get_daughters():
                 synthparms.append([syl[STARTLAB], syl[ENDLAB], syl[QTAPREFIX + "_endheight"], syl[QTAPREFIX + "_slope"], syl[QTAPREFIX + "_lambd"]])
-        phrf0track = synth(phr[QTAPREFIX + "_startpitch"], synthparms)
+        phrf0track = synthfunc(phr[QTAPREFIX + "_startpitch"], synthparms)
         times = np.concatenate((times, phrf0track.times))
         values = np.concatenate((values, phrf0track.values.flatten()))
     f0track = Track()
@@ -317,12 +316,6 @@ def qta_synth_utt(utt):
     f0track.values = values.reshape((-1, 1))
     return f0track
 
-
-def test_annotate(uttfn, f0fn):
-    return qta_annotate_utt(utt, f0, DEF_QTASPECS)
-
-def test_synth(utt):
-    return qta_synth_utt(utt)
 
 def plotstuff(utt, f0track, qtaf0track, ymin=DEF_PITCHRANGE[0]-5.0, ymax=DEF_PITCHRANGE[1]+5.0, title=None):
     def sylpron(syl):
@@ -349,22 +342,23 @@ def plotstuff(utt, f0track, qtaf0track, ymin=DEF_PITCHRANGE[0]-5.0, ymax=DEF_PIT
     pl.title(title or utt["file_id"])
     pl.show()
 
-def main_test(utt, f0):
-    t0 = time.time()
-    utt = test_annotate(utt, f0)
-    #report processing time
-    print("qta annotate took: %s seconds" % (time.time() - t0))
-    #report mean sylrmse
-    uttsylmses = []
-    for phr in utt.gr("Phrase"):
-        uttsylmses.extend(phr["qta_sylmses"])
-    print("Mean syl rmses: %s" % np.mean(map(math.sqrt, [e for e in uttsylmses if e is not None])))
-    #print(utt.gr("Syllable"))
-    qtaf0 = test_synth(utt)
+def utt_plot(utt, f0, qtaspecs=DEF_QTASPECS, annotate=True):
+    if annotate:
+        t0 = time.time()
+        utt = qta_annotate_utt(utt, f0, qtaspecs)
+        #report processing time
+        print("qta annotate took: %s seconds" % (time.time() - t0))
+        #report mean sylrmse
+        uttsylmses = []
+        for phr in utt.gr("Phrase"):
+            uttsylmses.extend(phr["qta_sylmses"])
+        print("Mean syl rmses: %s" % np.mean(map(math.sqrt, [e for e in uttsylmses if e is not None])))
+        #print(utt.gr("Syllable"))
+    qtaf0 = qta_synth_utt(utt)
     plotstuff(utt, f0, qtaf0)
 
-def main(utt, f0):
-    utt = test_annotate(utt, f0)
+def main(utt, f0, qtaspecs=DEF_QTASPECS):
+    utt = qta_annotate_utt(utt, f0, qtaspecs)
     print(pickle.dumps(utt, protocol=2))
 
 
