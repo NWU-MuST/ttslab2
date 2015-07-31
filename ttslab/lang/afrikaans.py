@@ -34,7 +34,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                          "wellformed_plosive_clusters": [["p","l"], ["b","l"], ["k","l"], ["g","l"], ["p","r"],
                                                          ["b","r"], ["t","r"], ["d","r"], ["k","r"], ["g","r"],
                                                          ["t","w"], ["d","w"], ["g","w"], ["k","w"]],
-                         "wellformed_fricative_clusters": [["f","l"], ["f","r"], ["f","j"], ["ʃ","j"], ["x", "r"]],
+                         "wellformed_fricative_clusters": [["f","l"], ["f","r"], ["f","j"], ["ʃ","j"], ["x", "l"], ["x", "r"]],
                          "wellformed_other_clusters": [["m","j"], ["n","j"]],
                          "wellformed_s_clusters": [["s","p"], ["s","t"], ["s","k"], ["s","m"], ["s","n"],
                                                    ["s","f"], ["s","w"], ["s","l"], ["s","p","l"],
