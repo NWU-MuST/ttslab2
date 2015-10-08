@@ -147,6 +147,6 @@ class PitchModel(ttslab.pitchmodel.PitchModel):
         # -- qta_startpitch for each phrase (inserted by main synthesiser -- HTS)
         # -- qta_endheight, qta_slope and qta_lambd for each syl
         # -- start and end for each syl (inserted by main synthesiser -- HTS)
-        f0track = ttslab.qta.qta_synth_utt(utt, synthfunc=ttslab.qta.synth) #synth2 is the strength limiting algorithm [2]
+        f0track = ttslab.qta.qta_synth_utt(utt, synthfunc=ttslab.qta.synth2) #synth2 is the strength limiting algorithm [2]
         utt["f0track"] = f0track
         return utt

@@ -5,5 +5,5 @@ __pycache__
 hts_engine/build
 ttslab/synthesizers/relp.c
 ttslab/synthesizers/relp.so
-ttslab/intonation/qta_sylcontour.c
-ttslab/intonation/qta_sylcontour.so
+ttslab/qta/qta_sylcontour.c
+ttslab/qta/qta_sylcontour.so
