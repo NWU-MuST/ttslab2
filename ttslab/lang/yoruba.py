@@ -283,6 +283,8 @@ Voice.standardise_text = standardise_text
 Voice.normalize_tokens = normalize_tokens
 Voice.langclass_words = simple_langclass_words
 
+#override previous default tokenizer's:
+Voice.tokenize_text.FUNCS = {"char_norm": CHAR_NORM}
 
 
 if __name__ == "__main__":

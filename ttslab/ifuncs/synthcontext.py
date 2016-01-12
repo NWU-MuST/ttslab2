@@ -236,7 +236,7 @@ def sylsegsstructure(sylitem, vowels):
             vowel = seg
             break
         onset.append(seg)
-    assert vowel
+    #assert vowel
     nucleus = seg
     if i < len(segs) - 1:
         coda = segs[i+1:]
@@ -248,5 +248,5 @@ def sylsegsstructure(sylitem, vowels):
         import sys
         utt = sylitem.relation.utterance
         print("WARNING: Strange syllable coda found in", utt["file_id"], ":", " ".join(coda).encode("utf-8"), file=sys.stderr)
-    return "".join(onset) or None, vowel, "".join(coda) or None
+    return "".join(onset) or None, vowel or None, "".join(coda) or None
 

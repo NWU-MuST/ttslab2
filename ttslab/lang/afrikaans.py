@@ -29,21 +29,21 @@ class Phoneset(ttslab.phoneset.Phoneset):
     def __init__(self):
         #syllable_clusters are processed in order, thus a list, not a set...
         self.features = {"name": "Lwazi Afrikaans Phoneset",
-                         "syllable_clusters": ["VCV", "VCCV", "VCCCV", "VCCCCV",
+                         "syllable_clusters": ["VCV", "VGV", "VCCV", "VCCCV", "VCCCCV",
                                                 "VCGV", "VCCGV", "VCCCGV", "VV"],
                          "wellformed_plosive_clusters": [["p","l"], ["b","l"], ["k","l"], ["g","l"], ["p","r"],
                                                          ["b","r"], ["t","r"], ["d","r"], ["k","r"], ["g","r"],
                                                          ["t","w"], ["d","w"], ["g","w"], ["k","w"]],
                          "wellformed_fricative_clusters": [["f","l"], ["f","r"], ["f","j"], ["ʃ","j"], ["x", "l"], ["x", "r"]],
-                         "wellformed_other_clusters": [["m","j"], ["n","j"]],
+                         #"wellformed_other_clusters": [["m","j"], ["n","j"]], NET IN LEENWOORDE SOOS *nyala*                            #CHECK WORD-INITIAL EXCEPTION
                          "wellformed_s_clusters": [["s","p"], ["s","t"], ["s","k"], ["s","m"], ["s","n"],
-                                                   ["s","f"], ["s","w"], ["s","l"], ["s","p","l"],
-                                                   ["s","p","r"], ["s","t","r"], ["s","k","l"],
-                                                   ["s","k","r"], ["s","k","w"]]
+                                                   ["s","w"], ["ʃ", "w"], ["s","l"], ["s","p","l"], #["s","f"] BASIES NET IN *sfeer* ?   #CHECK WORD-INITIAL EXCEPTION
+                                                   ["s","p","r"], ["s","t","r"], #["s","k","l"] NET IN LEENWOORDE SOOS *sklerose*        #CHECK WORD-INITIAL EXCEPTION
+                                                   ["s","k","r"]] #["s","k","w"] NET IN LEENWOORDE SOOS *squad*                          #CHECK WORD-INITIAL EXCEPTION
                          }
         self.features["wellformed_clusters"] = (self.features["wellformed_plosive_clusters"] +
                                                 self.features["wellformed_fricative_clusters"] +
-                                                self.features["wellformed_other_clusters"] +
+                                                #self.features["wellformed_other_clusters"] +
                                                 self.features["wellformed_s_clusters"])
         self.features["silence_phone"] = "pau"
         self.features["closure_phone"] = "paucl"
@@ -66,6 +66,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                        "æ"      : set(["class_sonorant", "class_syllabic", "vowel", "duration_short", "height_low", "position_front"]),
                        "ɑː"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_long", "height_low", "position_back"]),
                        "ɑːi"    : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
+                       "ɑːə"    : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
                        "b"      : set(["class_consonantal", "consonant", "manner_plosive", "place_bilabial", "voiced"]),
                        "d"      : set(["class_consonantal", "consonant", "manner_plosive", "place_alveolar", "voiced"]),
                        "iə"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_long", "height_mid", "position_front"]),
@@ -87,6 +88,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                        "s"      : set(["class_consonantal", "consonant", "manner_fricative", "manner_strident", "place_alveolar"]),
                        "t"      : set(["class_consonantal", "consonant", "manner_plosive", "place_alveolar"]),
                        "tʃ"     : set(["class_consonantal", "consonant", "manner_affricate", "place_alveolar"]),
+                       "dʒ"     : set(["class_consonantal", "consonant", "manner_affricate", "place_alveolar", "voiced"]),
                        "u"      : set(["class_sonorant", "class_syllabic", "vowel", "duration_short", "height_high", "position_back"]),
                        "ui"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
                        "v"      : set(["class_consonantal", "consonant", "manner_fricative", "manner_strident", "place_labiodental", "voiced"]),
@@ -113,6 +115,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                     "ʒ":"Z",       #mirage
                     "æ":"qaeq",    #ek
                     "ɑː":"AA",     #aan
+                    "ɑːə": "AAq",  #vrae
                     "ɑːi":"AAi",   #saai
                     "b":"b",
                     "d":"d",
@@ -135,6 +138,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                     "s":"s",
                     "t":"t",
                     "tʃ":"tS",     #tjek
+                    "dʒ":"dZ",     #jazz
                     "u":"u",       #boek
                     "ui":"ui",     #boei
                     "v":"v",       #wens
@@ -165,6 +169,9 @@ class Phoneset(ttslab.phoneset.Phoneset):
     def is_liquid(self, phonename):
         return "manner_liquid" in self.phones[phonename]
 
+    def is_liquid_or_trill(self, phonename):
+        return "manner_trill" in self.phones[phonename] or "manner_liquid" in self.phones[phonename]
+    
     def is_syllabicconsonant(self, phonename):
         return "class_syllabic" in self.phones[phonename] and "consonant" in self.phones[phonename]
 
@@ -184,7 +191,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                 return 8
             if "height_high" in self.phones[phonename]:
                 return 7
-        if self.is_liquid(phonename):
+        if self.is_liquid_or_trill(phonename):
             return 6
         if self.is_nasal(phonename):
             return 5
@@ -215,6 +222,9 @@ class Phoneset(ttslab.phoneset.Phoneset):
         if cluster == "VCV":
             #always split -> V.CV:
             return "V.CV"
+
+        if cluster == "VGV":
+            return "V.GV"
 
         if cluster == "VCCV":
             CC = phonecluster[1:3]
@@ -329,8 +339,8 @@ class Phoneset(ttslab.phoneset.Phoneset):
     def guess_syltonestress(self, word, syllables):
         """ Try to guess stress pattern for an unknown word...
         """
-        if len(syllables) == 1:                     # monosyllable always stressed
-            return "1"                              
+        if len(syllables) == 1:                     # monosyllable always unstressed
+            return "0"                              
         return "0" * len(syllables)                 #implement a "default" soon -- this used for the current experiments
 
 

@@ -208,6 +208,8 @@ class Phoneset(ttslab.phoneset.Phoneset):
         if cluster == "VCV":
             #always split -> V.CV:
             return "V.CV"
+        elif cluster == "VGV":
+            return "V.GV"
 
         if cluster == "VCCV":
             CC = phonecluster[1:3]
@@ -325,8 +327,8 @@ class Phoneset(ttslab.phoneset.Phoneset):
     def guess_syltonestress(self, word, syllables):
         """ Try to guess stress pattern for an unknown word...
         """
-        if len(syllables) == 1:                     # monosyllable always stressed
-            return "1"                              
+        if len(syllables) == 0:                     # monosyllable always unstressed
+            return "0"                              
         elif len(syllables) == 2:                   # bi-syllable guess stress not on schwa
             if "ə" in syllables[0] and "ə" not in syllables[1]:
                 return "01"

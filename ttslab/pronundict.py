@@ -20,6 +20,7 @@ from __future__ import unicode_literals, division, print_function #Py2
 __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
+import sys
 import codecs
 
 #Special character not allowed in dictionary
@@ -60,15 +61,15 @@ class PronunciationDictionary(object):
     def __check_consistency(self):
         """Assert that all info is consistent"""
         try:
-            for k in self.prond:
+            for k in sorted(self.prond):
                 if k in self.sylld:
                     assert sum(map(int, list(self.sylld[k]))) == len(self.prond[k].split())
-            for k in self.sylld:
+            for k in sorted(self.sylld):
                 assert k in self.prond
                 if k in self.toned:
                     assert len(self.toned[k]) == len(self.sylld[k])
         except Exception as e:
-            print("OFFENDING ENTRY:", k)
+            print("OFFENDING ENTRY:", k, file=sys.stderr)
             raise
 
     def check_against_phoneset(self, phset):

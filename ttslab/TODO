@@ -1,0 +1,3 @@
+Revert qTA pitchmodel back to simple Regression Trees as in
+   Interspeech paper and simplify features by removing phone contexts
+   (perhaps only include VOWEL identity)

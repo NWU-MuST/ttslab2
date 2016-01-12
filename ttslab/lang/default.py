@@ -294,7 +294,7 @@ class DefaultTokenizer(UttProcessor):
             tokenclass = "float"
         elif text.isdigit():
             tokenclass = "integer"
-        elif len(text) > 1 and text.isupper():
+        elif len(self.FUNCS["char_norm"](text)) > 1 and text.isupper():
             tokenclass = "letters"
         else:
             tokenclass = "default"
@@ -311,8 +311,8 @@ DefaultTokenizer.TOKENCLASS_DATE_RE = TOKENCLASS_DATE_RE
 DefaultTokenizer.TOKENCLASS_TIME_RE = TOKENCLASS_TIME_RE
 DefaultTokenizer.TOKENCLASS_CURR_RE = TOKENCLASS_CURR_RE
 DefaultTokenizer.TOKENCLASS_FLOAT_RE = TOKENCLASS_FLOAT_RE
+DefaultTokenizer.FUNCS = {"char_norm": CHAR_NORM}
 DefaultTokenizer.tokenize_text = whitespace_tokenize_text
-
 
 #Does expansions according to a few standard functions connected to
 #the voice, we defer language classification to the "langclass"

@@ -21,6 +21,8 @@ from __future__ import unicode_literals, division, print_function #Py2
 __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
+import sys
+
 import numpy as np
 
 import ttslab
@@ -45,10 +47,16 @@ class PitchModel(ttslab.pitchmodel.PitchModel):
 
     def _encodefeat(self, featidx, val):
         if featidx in self.featencoder:
-            if val in self.featencoder[featidx]:
-                return self.featencoder[featidx][val]
-            else:
-                return self.featencoder[featidx][NONE_STRING]
+            #print(featidx, val, file=sys.stderr)
+            try:
+                if val in self.featencoder[featidx]:
+                    return self.featencoder[featidx][val]
+                else:
+                    #print("HELLO!", file=sys.stderr)
+                    return self.featencoder[featidx][NONE_STRING]
+            except:
+                print(featidx, val, file=sys.stderr)
+                raise
         else:
             return [int(val)]
             
@@ -67,6 +75,8 @@ class PitchModel(ttslab.pitchmodel.PitchModel):
         j3 = len(utt.get_relation("Phrase"))
         for syl in utt.gr("Syllable"):
             p1, p2, p3 = onset, nucleus, coda = map(phmap, syl.sylsegsstructure(vowels)) or None
+            p1 = int(p1 is None)
+            p3 = int(p3 is None)
             nextsyl = syl.next_item
             prevsyl = syl.prev_item
             if nextsyl:
@@ -77,6 +87,7 @@ class PitchModel(ttslab.pitchmodel.PitchModel):
                 p5 = phmap(prevsyl.sylsegsstructure(vowels)[1])
             else:
                 p5 = NONE_STRING
+            a0 = syl.traverse("p.p.F:tone") or 0
             a1 = syl.traverse("p.F:tone") or 0
             a2 = syl.traverse("p.F:accent") or 0
             b1 = syl["tone"] or 0
@@ -88,12 +99,12 @@ class PitchModel(ttslab.pitchmodel.PitchModel):
             b5 = syl.traverse("R:SylStructure.M:sylpos_inword_b()") or 0
             b6 = syl.traverse("R:SylStructure.M:sylpos_inphrase_f()") or 0
             b7 = syl.traverse("R:SylStructure.M:sylpos_inphrase_b()") or 0
-            b8 = syl.traverse("R:SylStructure.M:numsylsbeforesyl_inphrase('tone', '1')") or 0
-            b9 = syl.traverse("R:SylStructure.M:numsylsaftersyl_inphrase('tone', '1')") or 0
+            b8 = syl.traverse("R:SylStructure.M:numsylsbeforesyl_inphrase('tone', '1')") or 0     #These defined for syllable stress tone == "1"
+            b9 = syl.traverse("R:SylStructure.M:numsylsaftersyl_inphrase('tone', '1')") or 0      #These defined for syllable stress tone == "1"
             b10 = syl.traverse("R:SylStructure.M:numsylsbeforesyl_inphrase('accent', '1')") or 0
             b11 = syl.traverse("R:SylStructure.M:numsylsaftersyl_inphrase('accent', '1')") or 0
-            b12 = syl.traverse("R:SylStructure.M:syldistprev('tone', '1')") or 0
-            b13 = syl.traverse("R:SylStructure.M:syldistnext('tone', '1')") or 0
+            b12 = syl.traverse("R:SylStructure.M:syldistprev('tone', '1')") or 0                  #These defined for syllable stress tone == "1"
+            b13 = syl.traverse("R:SylStructure.M:syldistnext('tone', '1')") or 0                  #These defined for syllable stress tone == "1"
             b14 = syl.traverse("R:SylStructure.M:syldistprev('accent', '1')") or 0
             b15 = syl.traverse("R:SylStructure.M:syldistnext('accent', '1')") or 0
             d1 = syl.traverse("R:SylStructure.parent.p.F:gpos") or NONE_STRING
@@ -119,7 +130,7 @@ class PitchModel(ttslab.pitchmodel.PitchModel):
             i2 = syl.traverse("R:SylStructure.parent.R:Phrase.parent.n.M:num_daughters()") or 0
             sylfeat = []
             for i, val in enumerate([p1, p2, p3, p4, p5,
-                                     a1, a2,
+                                     a0, a1, a2,
                                      b1, b2, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15,
                                      c1, c2,
                                      d1, d2,

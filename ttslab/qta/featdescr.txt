@@ -1,11 +1,12 @@
-p1	current syllable onset (consonant cluster before vowel)
-p2	current syllable nucleus
-p3	current syllable coda
+p1	current syllable has onset (consonant cluster before vowel)
+p2	current syllable nucleus (vowel)
+p3	current syllable has coda
 p4	next syllable nucleus
 p5	prev syllable nucleus
-a1	whether the previous syllable stressed or not (0: not stressed, 1: stressed)
+a0	pre-previous syllable stress or tone (0: not stressed, 1: stressed) (H|M|L)
+a1	previous syllable stress or tone (0: not stressed, 1: stressed) (H|M|L)
 a2	whether the previous syllable accented or not (0: not accented, 1: accented)
-b1	whether the current syllable stressed or not (0: not stressed, 1: stressed)
+b1	current syllable stress or tone (0: not stressed, 1: stressed) (H|M|L)
 b2	whether the current syllable accented or not (0: not accented, 1: accented)
 #there is no b3
 b4	position of the current syllable in the current word (forward)
@@ -20,7 +21,7 @@ b12	the number of syllables from the previous stressed syllable to the current s
 b13	the number of syllables from the current syllable to the next stressed syllable
 b14	the number of syllables from the previous accented syllable to the current syllable
 b15	the number of syllables from the current syllable to the next accented syllable
-c1	whether the next syllable stressed or not (0: not stressed, 1: stressed)
+c1	next syllable stress or tone (0: not stressed, 1: stressed) (H|M|L)
 c2	whether the next syllable accented or not (0: not accented, 1: accented)
 d1	gpos (guess part-of-speech) of the previous word
 d2	the number of syllables in the previous word
