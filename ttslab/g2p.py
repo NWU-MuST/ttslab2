@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """ Basic implementation of g2p based on rewrites...
-
-    TODO: - At some stage would be good to seperate a G2P base class
-            to specify interface that may be used by different G2P
-            implementations.
 """
 from __future__ import unicode_literals, division, print_function #Py2
 
@@ -19,6 +15,14 @@ class NoRuleFound(Exception):
 
 class GraphemeNotDefined(Exception):
     pass
+
+class G2P(object):
+    """Abstract class just to define the required interface...
+    """
+    def predict_word(self, word):
+        """ Takes a string and returns a list of phonemes...
+        """
+        raise NotImplementedError
 
 class RewriteRule(object):
     """ Simply keeps rule info together...
@@ -54,7 +58,7 @@ class RewriteRule(object):
         return True
         
 
-class G2P_Rewrites(object):
+class G2P_Rewrites(G2P):
     """ Class to contain and implement the application of rewrite
         rules to predict pronunciations of isolated words...
 
