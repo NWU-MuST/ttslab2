@@ -21,6 +21,8 @@ from ttslab.lang.afrikaans_numexp import expand as NUM_EXPAND
 import ttslab.phoneset
 from ttslab.lang.default import DefaultVoice
 
+#For JSM syllabification model
+import sequitur
 
 class Phoneset(ttslab.phoneset.Phoneset):
     """ The clusters and syllabification are ripped from the English
@@ -47,6 +49,8 @@ class Phoneset(ttslab.phoneset.Phoneset):
                                                 self.features["wellformed_s_clusters"])
         self.features["silence_phone"] = "pau"
         self.features["closure_phone"] = "paucl"
+        self.features["glottal_phone"] = "ʔ"
+        self.pause_phones = [self.features["silence_phone"], self.features["closure_phone"], self.features["glottal_phone"]]
         self.phones = {"pau"    : set(["pause"]),
                        "paucl"  : set(["closure"]),
                        "ʔ"      : set(["glottal-stop"]),
@@ -343,6 +347,36 @@ class Phoneset(ttslab.phoneset.Phoneset):
             return "0"                              
         return "0" * len(syllables)                 #implement a "default" soon -- this used for the current experiments
 
+
+class PhonesetJSMSyl(Phoneset):
+    def __init__(self, jsmmap, jsmmodel):
+        Phoneset.__init__(self)
+        #Check phoneset definitions
+        assert set(self.phones.keys()).difference(set(jsmmap.keys())) == set()#set(self.pause_phones)
+        self.jsmmap = jsmmap
+        self.jsmmodel = jsmmodel
+        self.jsmtranslator = sequitur.Translator(self.jsmmodel)
+
+    def __getstate__(self):
+        del self.__dict__["jsmtranslator"]
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self.jsmtranslator = sequitur.Translator(self.jsmmodel)
+
+    def syllabify(self, phones):
+        jsm_istring = "#" + "".join([self.jsmmap[ph] for ph in phones]) + "#"
+        #print(jsm_istring)
+        jsm_ostring = self.jsmtranslator(jsm_istring)
+        #print(jsm_ostring)
+        sylls = [[]]
+        for ph, b in zip(phones, jsm_ostring):
+            sylls[-1].append(ph)
+            if b == "b":
+                sylls.append([])
+        sylls.pop()
+        return sylls
 
 ##############################        
 ###Helper constants:
