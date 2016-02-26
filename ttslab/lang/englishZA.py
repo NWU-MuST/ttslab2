@@ -17,7 +17,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
     def __init__(self):
         #syllable_clusters are processed in order, thus a list, not a set...
         self.features = {"name": "Lwazi English Phoneset",
-                         "syllable_clusters": ["VCV", "VCCV", "VCCCV", "VCCCCV",
+                         "syllable_clusters": ["VCV", "VGV", "VCCV", "VCCCV", "VCCCCV",
                                                 "VCGV", "VCCGV", "VCCCGV", "VV"],
                          "wellformed_plosive_clusters": [["p","l"], ["b","l"], ["k","l"], ["g","l"], ["p","ɹ"],
                                                          ["b","ɹ"], ["t","ɹ"], ["d","ɹ"], ["k","ɹ"], ["g","ɹ"],
@@ -202,12 +202,16 @@ class Phoneset(ttslab.phoneset.Phoneset):
 
             Need to refactor the if statements to make clearer/simpler...
         """
+        ###COMMENTS IN THIS FUNCTION ARE OUT OF DATE...
 
         phonecluster = phonelist[match.start() : match.end()]
 
         if cluster == "VCV":
-            #always split -> V.CV:
-            return "V.CV"
+            #always split -> V.CV (except disallow /N/ onset):
+            if phonecluster[1] == "ŋ":
+                return "VC.V"
+            else:
+                return "V.CV"
         elif cluster == "VGV":
             return "V.GV"
 
@@ -230,38 +234,51 @@ class Phoneset(ttslab.phoneset.Phoneset):
         if cluster == "VCCCV":
             CCC = phonecluster[1:4]
             C2C3 = CCC[1:]
-            #if CCC are all obstruents -> VC.CCV:
-            if all([self.is_obstruent(C) for C in CCC]):
-                return "VC.CCV"
+            # #if CCC are all obstruents -> VC.CCV:
+            # if all([self.is_obstruent(C) for C in CCC]):
+            #     return "VC.CCV"
             #if C2C3 are wellformed onsets -> VC.CCV:
+            if CCC in self.features["wellformed_clusters"]:
+                return "V.CCCV"
             if C2C3 in self.features["wellformed_clusters"]:
                 return "VC.CCV"
             else:
                 return "VCC.CV"
 
         if cluster == "VCCCCV":
-            #always split -> VC.CCCV:
-            return "VC.CCCV"
+            if phonecluster[2:5] in self.features["wellformed_clusters"]:
+                return "VC.CCCV"
+            if phonecluster[3:5] in self.features["wellformed_clusters"]:
+                return "VCC.CCV"
+            return "VCCC.CV"
 
         if cluster == "VCGV":
             CG = phonecluster[1:3]
-            if not self.is_plosive(CG[0]):                   #C not a stop
+            # if not self.is_plosive(CG[0]):                   #C not a stop
+            #     return "VC.GV"
+            # else:
+            if CG not in self.features["wellformed_clusters"]: #C a stop and CG not wellformed
                 return "VC.GV"
             else:
-                if CG not in self.features["wellformed_clusters"]: #C a stop and CG not wellformed
-                    return "VC.GV"
-                else:
-                    return "V.CGV"                                 #C a stop and CG wellformed
+                return "V.CGV"                                 #C a stop and CG wellformed
 
         if cluster == "VCCGV":
             CCG = phonecluster[1:4]
-            if CCG[0] == "s":
+            # if CCG[0] == "s":
+            #     return "V.CCGV"
+            # else:
+            #     return "VC.CGV"
+            if CCG in self.features["wellformed_clusters"]:
                 return "V.CCGV"
             else:
                 return "VC.CGV"
 
         if cluster == "VCCCGV":
-            return "VC.CCGV"
+            if phonecluster[2:5] in self.features["wellformed_clusters"]:
+                return "VC.CCGV"
+            if phonecluster[3:5] in self.features["wellformed_clusters"]:
+                return "VCC.CGV"
+            return "VCCC.GV"
 
         if cluster == "VV":   #not described in the Hall paper...
             return "V.V"
