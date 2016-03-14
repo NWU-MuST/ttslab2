@@ -417,6 +417,7 @@ def word_to_phones(word_item, phoneset, pronunaddendum, pronundict, g2p, syllabi
             warns = "WARNING: No pronunciation found for '%s'" % word_item["name"]
             print(warns.encode("utf-8"), file=sys.stderr)
             phones = [phoneset.features["silence_phone"]]
+            syllables = [phones]
     ### Fill in additional info not obtained from PD
     if not syllables:
         syllables = syllabify_func(phones)
