@@ -394,26 +394,30 @@ def word_to_phones(word_item, phoneset, pronunaddendum, pronundict, g2p, syllabi
     """
     syltones = None #also for "sylstress"
     syllables = None
+    ### Use `pronunaddendum` or `pronundict` --> PD?
     if pronunaddendum and pronunaddendum.contains(word_item["name"]):
-        phones = pronunaddendum.pron_lookup(word_item["name"]) #DEMITASSE: assumed simple for now...
+        pd = pronunaddendum
     else:
-        if pronundict.contains(word_item["name"], word_item["pos"]): #with POS?
-            syllables = pronundict.syll_lookup(word_item["name"], word_item["pos"]) #try: might return None
-            syltones = pronundict.tone_lookup(word_item["name"], word_item["pos"])  #try: might return None
-            if not syllables:
-                phones = pronundict.pron_lookup(word_item["name"], word_item["pos"])
-        elif pronundict.contains(word_item["name"]):            #without POS?
-            syllables = pronundict.syll_lookup(word_item["name"]) #try: might return None
-            syltones = pronundict.tone_lookup(word_item["name"])  #try: might return None
-            if not syllables:
-                phones = pronundict.pron_lookup(word_item["name"])
-        else:  #word not in pronundict
-            try:
-                phones = g2p.predict_word(word_item["name"])
-            except (GraphemeNotDefined, NoRuleFound):
-                warns = "WARNING: No pronunciation found for '%s'" % word_item["name"]
-                print(warns.encode("utf-8"), file=sys.stderr)
-                phones = [phoneset.features["silence_phone"]]
+        pd = pronundict
+    ### Now look for as much info as possible from PD
+    if pd.contains(word_item["name"], word_item["pos"]): #with POS?
+        syllables = pd.syll_lookup(word_item["name"], word_item["pos"]) #try: might return None
+        syltones = pd.tone_lookup(word_item["name"], word_item["pos"])  #try: might return None
+        if not syllables:
+            phones = pd.pron_lookup(word_item["name"], word_item["pos"])
+    elif pd.contains(word_item["name"]):            #without POS?
+        syllables = pd.syll_lookup(word_item["name"]) #try: might return None
+        syltones = pd.tone_lookup(word_item["name"])  #try: might return None
+        if not syllables:
+            phones = pd.pron_lookup(word_item["name"])
+    else:  #word not in PD
+        try:
+            phones = g2p.predict_word(word_item["name"])
+        except (GraphemeNotDefined, NoRuleFound):
+            warns = "WARNING: No pronunciation found for '%s'" % word_item["name"]
+            print(warns.encode("utf-8"), file=sys.stderr)
+            phones = [phoneset.features["silence_phone"]]
+    ### Fill in additional info not obtained from PD
     if not syllables:
         syllables = syllabify_func(phones)
     if not syltones:
