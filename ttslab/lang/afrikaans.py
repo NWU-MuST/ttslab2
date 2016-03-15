@@ -76,7 +76,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                        "iə"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_long", "height_mid", "position_front"]),
                        "øː"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_long", "height_mid", "position_front", "articulation_rounded"]),
                        "f"      : set(["class_consonantal", "consonant", "manner_fricative", "manner_strident", "place_labiodental"]),
-                       "g"      : set(["class_consonantal", "consonant", "manner_plosive", "place_velar", "voiced"]),
+                       "ɡ"      : set(["class_consonantal", "consonant", "manner_plosive", "place_velar", "voiced"]),
                        "ɦ"      : set(["consonant", "manner_fricative", "place_glottal", "voiced"]),
                        "i"      : set(["class_sonorant", "class_syllabic", "vowel", "duration_short", "height_high", "position_front"]),
                        "iu"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
@@ -126,8 +126,8 @@ class Phoneset(ttslab.phoneset.Phoneset):
                     "iə":"iq",     #seer
                     "øː":"qooq",   #seun
                     "f":"f",
-                    "g":"g",
-                    "ɦ":"hq",
+                    "ɡ":"g",
+                    "ɦ":"hv",
                     "i":"i",       #sien
                     "iu":"iu",     #meeu
                     "j":"j",
