@@ -69,7 +69,7 @@ class PronunciationDictionary(object):
                 if k in self.toned:
                     assert len(self.toned[k]) == len(self.sylld[k])
         except Exception as e:
-            print("OFFENDING ENTRY:", k, file=sys.stderr)
+            print("OFFENDING ENTRY:", k.encode("utf-8"), file=sys.stderr)
             raise
 
     def check_against_phoneset(self, phset):
