@@ -391,12 +391,12 @@ CONJUNCTIONS = ["en", "maar", "omdat", "want", "of"]
 INTERROGATIVE_PRONOUNS = ["wie", "wat", "watter", "waar", "hoe", "wanneer", "hoekom"]
 PERSONAL_PRONOUNS = ["hy", "haar", "sy", "hulle", "hul", "ons", "syne", "myne", "hare"]
 AUXILIARY_VERBS = ["is", "het"]
-DEMIT = ["dan", "toe", "nadat", "aan", "voordat", "jy", "u",
+DEMIT = ["dit", "dis", "dan", "toe", "nadat", "aan", "voordat", "jy", "u",
          "was", "gewees", "geword", "word", "om", "te", "uit",
          "tydens", "waarin", "se"] #DEMITASSE
 
 ###Used directly in Voice implementation:
-VALID_GRAPHS = set("abcdefghijklmnopqrstuvwxyz'àèìòùäëïöüâêîôû") #specify only lowercase NFC -- used for pronunciation/language determination
+VALID_GRAPHS = set("_abcdefghijklmnopqrstuvwxyz'àèìòùäëïöüâêîôû") #specify only lowercase NFC -- used for pronunciation/language determination
 
 GPOS = dict([(word, "prep") for word in PREPOSITIONS] +
             [(word, "det") for word in DETERMINERS] +
@@ -547,7 +547,8 @@ def normalize_tokens(owner, utt, args=None):
 def simple_langclass_words(owner, utt, args=None):
     """Use simple heuristics to determine the word item's language.
     """
-    char_threshold = 10 #if words longer than this occur in other pronun resources, then label as such --- a value of 10 here: it is virtually/practically disabled
+    #char_threshold = 10 #if words longer than this occur in other pronun resources, then label as such --- a value of 10 here: it is virtually/practically disabled
+    char_threshold = 999999 #DEMITASSE: disabled!
     for word in utt.get_relation("Word"):
         parent_token = word.get_item_in_relation("Token").parent_item
         if word["lang"] is not None: #already set?
