@@ -53,7 +53,7 @@ from ttslab.uttprocessor import UttProcessor
 from ttslab.lang.english_numexp import expand as NUM_EXPAND
 
 ############################## THESE SHOULD ALL BE ATTACHED TO THE VOICE CLASS TO BE USED
-VALID_GRAPHS = set("abcdefghijklmnopqrstuvwxyz'") #specify only lowercase NFC -- used for pronunciation/language determination
+VALID_GRAPHS = set("_abcdefghijklmnopqrstuvwxyz'") #specify only lowercase NFC -- used for pronunciation/language determination
 VALID_PUNCTS = set('".,:;!?(){}[]-')
 PHRASEBREAK_PUNCTS = set("!?.,:;)")
 PHRASEBREAK_TOKENS = set()
@@ -370,7 +370,8 @@ def simple_langclass_words(owner, utt, args=None):
        the default voice we assume all number expansion and unknowns
        are English.
     """
-    char_threshold = 4 #if words longer than this occur in other pronun resources, then label as such
+    #char_threshold = 4 #if words longer than this occur in other pronun resources, then label as such
+    char_threshold = 99999999 #DEMITASSE: disabled!
     for word in utt.get_relation("Word"):
         parent_token = word.get_item_in_relation("Token").parent_item
         if word["lang"] is not None: #already set?
