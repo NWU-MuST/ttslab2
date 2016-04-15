@@ -164,7 +164,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
     def guess_syltonestress(self, word, syllables):
         """ Try to guess tone/stress pattern for an unknown word...
         """
-        return "0" * len(syllables)
+        return "L" * len(syllables)
 
 PHRASEBREAK_TOKENS = set()
 # #These are not all strictly conjunctions (some are motivated by
