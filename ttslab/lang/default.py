@@ -379,9 +379,10 @@ def simple_langclass_words(owner, utt, args=None):
         if parent_token["class"] in ["currency", "float", "integer", "date", "time"]:
             word["lang"] = "englishZA"
             continue
-        if not set(word["name"]).issubset(owner.VALID_GRAPHS): #valid orthography?
-            word["lang"] = "englishZA"
-            continue
+        #DEMITASSE: THIS CAUSES PROBLEMS FOR VOICE BUILDING WITH "SPECIAL" SPEAKER SPECIFIC WORDS
+        # if not set(word["name"]).issubset(owner.VALID_GRAPHS): #valid orthography?
+        #     word["lang"] = "englishZA"
+        #     continue
         for lang in [k for k in owner.pronun.keys() if k != "main"]: #other languages according to available resources
             if len(word["name"]) > char_threshold:
                 if not (word["name"] in owner.pronun["main"]["pronundict"] or word["name"] in owner.pronun["main"]["pronunaddendum"]):
