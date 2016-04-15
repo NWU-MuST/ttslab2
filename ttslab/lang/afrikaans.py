@@ -89,6 +89,8 @@ class Phoneset(ttslab.phoneset.Phoneset):
                        "uəi"    : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
                        "p"      : set(["class_consonantal", "consonant", "manner_plosive", "place_bilabial"]),
                        "r"      : set(["class_sonorant", "class_consonantal", "consonant", "manner_trill", "place_alveolar", "voiced"]),
+                       #BREI "R"
+                       "ʁ"      : set(["class_sonorant", "class_consonantal", "consonant", "manner_trill", "place_uvular", "voiced"]),
                        "s"      : set(["class_consonantal", "consonant", "manner_fricative", "manner_strident", "place_alveolar"]),
                        "t"      : set(["class_consonantal", "consonant", "manner_plosive", "place_alveolar"]),
                        "tʃ"     : set(["class_consonantal", "consonant", "manner_affricate", "place_alveolar"]),
@@ -139,6 +141,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                     "uəi":"uqi",   #rooi
                     "p":"p",
                     "r":"r",
+                    "ʁ":"R",
                     "s":"s",
                     "t":"t",
                     "tʃ":"tS",     #tjek
