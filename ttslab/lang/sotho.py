@@ -16,7 +16,6 @@ class Phoneset(ttslab.phoneset.Phoneset):
         self.features = {"name": "Lwazi Sotho Phoneset",
                          "silence_phone": "pau",
                          "closure_phone": "paucl",
-                         "foreign_CC_cluster_1split": [],
                          "foreign_CC_cluster_1split": [["l", "s"], ["l", "f"], ["l", "tʰ"], ["l", "tʼ"],
                                                        ["kʼ", "s"], ["kʼ", "f"], ["kʼ", "tʰ"], ["kʼ", "tʼ"],
                                                        ["kʰ", "s"], ["kʰ", "f"], ["kʰ", "tʰ"], ["kʰ", "tʼ"],
@@ -45,6 +44,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                        "kʰ"     : set(["class_consonantal", "consonant", "manner_plosive", "place_velar", "aspirated"]),
                        "k͡x"     : set(["class_consonantal", "consonant", "manner_affricate", "place_velar"]),
                        "ǃ"      : set(["class_consonantal", "consonant", "manner_click", "place_post-alveolar"]),
+                       "ǃʰ"      : set(["class_consonantal", "consonant", "manner_click", "place_post-alveolar", "aspirated"]),
                        "f"      : set(["class_consonantal", "consonant", "manner_fricative", "manner_strident", "place_labiodental"]),
                        "s"      : set(["class_consonantal", "consonant", "manner_fricative", "manner_strident", "place_alveolar"]),
                        "ʃ"      : set(["class_consonantal", "consonant", "manner_fricative", "place_post-alveolar"]),
@@ -73,7 +73,6 @@ class Phoneset(ttslab.phoneset.Phoneset):
                        "t͡ʃʰ"    : set(["class_consonantal", "consonant", "manner_affricate", "manner_strident", "place_alveolar", "place_post-alveolar", "aspirated"]),
                        "t͡lʼ"    : set(["class_consonantal", "consonant", "manner_plosive", "manner_lateral", "place_alveolar", "ejective"]),
                        "t͡lʰ"    : set(["class_consonantal", "consonant", "manner_plosive", "manner_lateral", "place_alveolar", "aspirated"]),
-                       "p͡sʰ"    : set(["class_consonantal", "consonant", "manner_affricate", "manner_strident", "place_bilabial", "place_alveolar", "aspirated"]),
                        "p͡ʃʼ"    : set(["class_consonantal", "consonant", "manner_affricate", "manner_strident", "place_bilabial", "place_post-alveolar", "ejective"]),
                        "p͡ʃʰ"    : set(["class_consonantal", "consonant", "manner_affricate", "manner_strident", "place_bilabial", "place_post-alveolar", "aspirated"])
                        }
@@ -90,6 +89,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                     "kʰ":"kh",
                     "k͡x":"kx",
                     "ǃ":"q",
+                    "ǃʰ":"qh",
                     "f":"f",
                     "s":"s",
                     "ʃ":"S",
@@ -118,7 +118,6 @@ class Phoneset(ttslab.phoneset.Phoneset):
                     "t͡ʃʰ":"tSh",
                     "t͡lʼ":"tle",
                     "t͡lʰ":"tlh",
-                    "p͡sʰ":"psh",
                     "p͡ʃʼ":"pSe",
                     "p͡ʃʰ":"pSh"
                     }
@@ -221,7 +220,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
             else:
                 print("syllabify(): WARNING: unexpectedly long consonant cluster found: '{}' in '{}'".format("".join(cluster), "".join(phones)).encode("utf-8"), file=sys.stderr)                
                 if self.is_syllabic(cluster[0]):
-                    #V.N.*V
+                    #V.sC.*V
                     bounds.append(ci) 
                     bounds.append(ci + 1)
                 else:
