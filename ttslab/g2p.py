@@ -219,15 +219,22 @@ class G2P_Rewrites_Semicolon(G2P_Rewrites):
                         self.gnulls.update({gk: gv})
 
 if __name__ == "__main__":
-    import sys
-    try:
-        rulesfn, gnullsfn, pmapfn = sys.argv[1:4]
-        word = sys.argv[4]
-        rs = G2P_Rewrites_Semicolon()
-        rs.load_ruleset_semicolon(rulesfn)
-        rs.load_gnulls(gnullsfn)
-        rs.load_simple_phonemapfile(pmapfn)
-        rs.map_phones()
-        print("%s: %s" % (word, " ".join(rs.predict_word(word))))
-    except IndexError:
-        print("USAGE: g2p.py RULESFN GNULLSFN PMAPFN WORD")
+    import sys, argparse
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('rulesfn', metavar='RULESFN', type=str, help="rules file (semicolon format)")
+    parser.add_argument('gnullsfn', metavar='GNULLSFN', type=str, help="gnulls file (semicolon format)")
+    parser.add_argument('pmapfn', metavar='PMAPFN', type=str, help="phonemap file (semicolon format)")
+    parser.add_argument('gmapfn', metavar='GMAPFN', type=str, help="phonemap file (semicolon format)")
+    args = parser.parse_args()
+    
+    rs = G2P_Rewrites_Semicolon()
+    rs.load_ruleset_semicolon(args.rulesfn)
+    rs.load_gnulls(args.gnullsfn)
+    rs.load_simple_phonemapfile(args.pmapfn)
+    rs.map_phones()
+    rs.load_simple_graphmapfile(args.gmapfn)
+    rs.map_graphs()
+    
+    for line in sys.stdin:
+        word = unicode(line, encoding="utf-8").strip()
+        print("{}\t{}".format(word, " ".join(rs.predict_word(word))).encode("utf-8"))

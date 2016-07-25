@@ -33,9 +33,9 @@ class Phoneset(ttslab.phoneset.Phoneset):
         self.features = {"name": "Lwazi Afrikaans Phoneset",
                          "syllable_clusters": ["VCV", "VGV", "VCCV", "VCCCV", "VCCCCV",
                                                 "VCGV", "VCCGV", "VCCCGV", "VV"],
-                         "wellformed_plosive_clusters": [["p","l"], ["b","l"], ["k","l"], ["g","l"], ["p","r"],
-                                                         ["b","r"], ["t","r"], ["d","r"], ["k","r"], ["g","r"],
-                                                         ["t","w"], ["d","w"], ["g","w"], ["k","w"]],
+                         "wellformed_plosive_clusters": [["p","l"], ["b","l"], ["k","l"], ["ɡ","l"], ["p","r"],
+                                                         ["b","r"], ["t","r"], ["d","r"], ["k","r"], ["ɡ","r"],
+                                                         ["t","w"], ["d","w"], ["ɡ","w"], ["k","w"]],
                          "wellformed_fricative_clusters": [["f","l"], ["f","r"], ["f","j"], ["ʃ","j"], ["x", "l"], ["x", "r"]],
                          #"wellformed_other_clusters": [["m","j"], ["n","j"]], NET IN LEENWOORDE SOOS *nyala*                            #CHECK WORD-INITIAL EXCEPTION
                          "wellformed_s_clusters": [["s","p"], ["s","t"], ["s","k"], ["s","m"], ["s","n"],
@@ -70,7 +70,6 @@ class Phoneset(ttslab.phoneset.Phoneset):
                        "æ"      : set(["class_sonorant", "class_syllabic", "vowel", "duration_short", "height_low", "position_front"]),
                        "ɑː"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_long", "height_low", "position_back"]),
                        "ɑːi"    : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
-                       "ɑːə"    : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
                        "b"      : set(["class_consonantal", "consonant", "manner_plosive", "place_bilabial", "voiced"]),
                        "d"      : set(["class_consonantal", "consonant", "manner_plosive", "place_alveolar", "voiced"]),
                        "iə"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_long", "height_mid", "position_front"]),
@@ -86,7 +85,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                        "m"      : set(["class_sonorant", "class_consonantal", "consonant", "manner_nasal", "place_bilabial", "voiced"]),
                        "n"      : set(["class_sonorant", "class_consonantal", "consonant", "manner_nasal", "place_alveolar", "voiced"]),
                        "uə"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_long", "height_mid", "position_back", "articulation_rounded"]),
-                       "uəi"    : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
+                       "ɔːi"    : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
                        "p"      : set(["class_consonantal", "consonant", "manner_plosive", "place_bilabial"]),
                        "r"      : set(["class_sonorant", "class_consonantal", "consonant", "manner_trill", "place_alveolar", "voiced"]),
                        #BREI "R"
@@ -121,7 +120,6 @@ class Phoneset(ttslab.phoneset.Phoneset):
                     "ʒ":"Z",       #mirage
                     "æ":"qaeq",    #ek
                     "ɑː":"AA",     #aan
-                    "ɑːə": "AAq",  #vrae
                     "ɑːi":"AAi",   #saai
                     "b":"b",
                     "d":"d",
@@ -138,7 +136,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                     "m":"m",
                     "n":"n",
                     "uə":"uq",     #room
-                    "uəi":"uqi",   #rooi
+                    "ɔːi":"OOi",   #rooi
                     "p":"p",
                     "r":"r",
                     "ʁ":"R",
