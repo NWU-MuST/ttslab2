@@ -219,22 +219,38 @@ class G2P_Rewrites_Semicolon(G2P_Rewrites):
                         self.gnulls.update({gk: gv})
 
 if __name__ == "__main__":
-    import sys, argparse
+    import sys, argparse, pickle
+    import ttslab.g2p
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('rulesfn', metavar='RULESFN', type=str, help="rules file (semicolon format)")
-    parser.add_argument('gnullsfn', metavar='GNULLSFN', type=str, help="gnulls file (semicolon format)")
-    parser.add_argument('pmapfn', metavar='PMAPFN', type=str, help="phonemap file (semicolon format)")
-    parser.add_argument('gmapfn', metavar='GMAPFN', type=str, help="phonemap file (semicolon format)")
+    parser.add_argument('--rulesfn', metavar='RULESFN', type=str, default=None, help="rules file (semicolon format)")
+    parser.add_argument('--gnullsfn', metavar='GNULLSFN', type=str, default=None, help="gnulls file (semicolon format)")
+    parser.add_argument('--pmapfn', metavar='PMAPFN', type=str, default=None, help="phonemap file (semicolon format)")
+    parser.add_argument('--gmapfn', metavar='GMAPFN', type=str, default=None, help="phonemap file (semicolon format)")
+    parser.add_argument('--modelfn', metavar='MODELFN', type=str, default=None, help="Load from model file (pickle format)")
+    parser.add_argument('--dumpmodel', dest='dumpmodel', action='store_true', help="Just dump model (pickle format)")
+    parser.set_defaults(dumpmodel=False)
     args = parser.parse_args()
     
-    rs = G2P_Rewrites_Semicolon()
-    rs.load_ruleset_semicolon(args.rulesfn)
-    rs.load_gnulls(args.gnullsfn)
-    rs.load_simple_phonemapfile(args.pmapfn)
-    rs.map_phones()
-    rs.load_simple_graphmapfile(args.gmapfn)
-    rs.map_graphs()
+    if args.modelfn:
+        rs = pickle.load(open(args.modelfn))
+    else:
+        rs = ttslab.g2p.G2P_Rewrites_Semicolon()
+        rs.load_ruleset_semicolon(args.rulesfn)
+        if args.gnullsfn:
+            rs.load_gnulls(args.gnullsfn)
+        if args.pmapfn:
+            rs.load_simple_phonemapfile(args.pmapfn)
+            rs.map_phones()
+        if args.gmapfn:
+            rs.load_simple_graphmapfile(args.gmapfn)
+            rs.map_graphs()
     
-    for line in sys.stdin:
-        word = unicode(line, encoding="utf-8").strip()
-        print("{}\t{}".format(word, " ".join(rs.predict_word(word))).encode("utf-8"))
+    if args.dumpmodel:
+        print(pickle.dumps(rs))
+    else:
+        for line in sys.stdin:
+            word = unicode(line, encoding="utf-8").strip()
+            try:
+                print("{}\t{}".format(word, " ".join(rs.predict_word(word))).encode("utf-8"))
+            except Exception as e:
+                print("WARNING: {}".format(e), file=sys.stderr)
