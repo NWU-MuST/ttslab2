@@ -217,10 +217,6 @@ class Phoneset(ttslab.phoneset.Phoneset):
             T.A. Hall, "English syllabification as the interaction of
             markedness constraints" in Studia Linguistica, vol. 60, 2006,
             pp. 1-33
-
-            Need to refactor the if statements to make clearer/simpler...
-            
-            Implementation for English... needs to be revisited...
         """
         phonecluster = phonelist[match.start() : match.end()]
 
