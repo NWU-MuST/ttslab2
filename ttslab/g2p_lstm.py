@@ -57,14 +57,14 @@ if __name__ == "__main__":
     import ttslab.g2p_lstm
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('modeldir', metavar='MODELDIR', type=str, default=None, help="Load from model directory")
-    parser.add_argument('--dumpmodel', dest='dumpmodel', action='store_true', help="Just dump G2P model (pickle format)")
-    parser.set_defaults(dumpmodel=False)
+    parser.add_argument('--dumpmodel', dest='dumpmodel', metavar='MODELFN', type=str, help="Just dump G2P model (pickle format)")
     args = parser.parse_args()
 
     g2p = ttslab.g2p_lstm.G2P_LSTM(args.modeldir)
 
     if args.dumpmodel:
-        print(pickle.dumps(g2p))
+        with open(args.dumpmodel, "wb") as outfh:
+            pickle.dump(g2p, outfh, protocol=2)
     else:
         for line in sys.stdin:
             word = unicode(line, encoding="utf-8").strip()
