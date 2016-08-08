@@ -23,7 +23,7 @@ class G2P_LSTM(g2p.G2P):
     def __init__(self, modeldir):
         tempfh = tempfile.NamedTemporaryFile()
         with tarfile.open(fileobj=tempfh, mode="w") as tarfh:
-            tarfh.add(modeldir, arcname=os.path.basename(modeldir))
+            tarfh.add(modeldir, arcname="")
         tempfh.flush()
         with open(tempfh.name) as infh:
             self.modeldirblob = infh.read()
