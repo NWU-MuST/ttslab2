@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""G2P implementation using Sequitur joint-sequence-models (JSMs)...
+"""G2P implementation using LSTM sequence-to-sequence model...
 """
 from __future__ import unicode_literals, division, print_function #Py2
 
@@ -14,7 +14,10 @@ import shutil
 
 import ttslab.g2p as g2p
 
-#import g2p_seq2seq.g2p
+try:
+    import g2p_seq2seq.g2p
+except ImportError:
+    print("WARNING: Failed to import g2p import implementation")
 
 class G2P_LSTM(g2p.G2P):
     def __init__(self, modeldir):
