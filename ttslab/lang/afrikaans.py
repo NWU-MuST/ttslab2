@@ -33,13 +33,13 @@ class Phoneset(ttslab.phoneset.Phoneset):
         self.features = {"name": "Lwazi Afrikaans Phoneset",
                          "syllable_clusters": ["VCV", "VGV", "VCCV", "VCCCV", "VCCCCV",
                                                 "VCGV", "VCCGV", "VCCCGV", "VV"],
-                         "wellformed_plosive_clusters": [["p","l"], ["b","l"], ["k","l"], ["ɡ","l"], ["p","r"],
+                         "wellformed_plosive_clusters": [["p","l"], ["b","l"], ["k","l"], ["k", "n"], ["ɡ","l"], ["p","r"],
                                                          ["b","r"], ["t","r"], ["d","r"], ["k","r"], ["ɡ","r"],
                                                          ["t","w"], ["d","w"], ["ɡ","w"], ["k","w"]],
-                         "wellformed_fricative_clusters": [["f","l"], ["f","r"], ["f","j"], ["ʃ","j"], ["x", "l"], ["x", "r"]],
+                         "wellformed_fricative_clusters": [["f","l"], ["f","r"], ["x", "l"], ["x", "r"], ["v", "r"]], #, ["f","j"]], LEENWOORDE SOOS *fjord*?
                          #"wellformed_other_clusters": [["m","j"], ["n","j"]], NET IN LEENWOORDE SOOS *nyala*                            #CHECK WORD-INITIAL EXCEPTION
                          "wellformed_s_clusters": [["s","p"], ["s","t"], ["s","k"], ["s","m"], ["s","n"],
-                                                   ["s","w"], ["ʃ", "w"], ["s","l"], ["s","p","l"], #["s","f"] BASIES NET IN *sfeer* ?   #CHECK WORD-INITIAL EXCEPTION
+                                                   ["s","w"], ["s","l"], ["s","p","l"], #["s","f"] BASIES NET IN *sfeer* ?   #CHECK WORD-INITIAL EXCEPTION
                                                    ["s","p","r"], ["s","t","r"], #["s","k","l"] NET IN LEENWOORDE SOOS *sklerose*        #CHECK WORD-INITIAL EXCEPTION
                                                    ["s","k","r"]] #["s","k","w"] NET IN LEENWOORDE SOOS *squad*                          #CHECK WORD-INITIAL EXCEPTION
                          }
