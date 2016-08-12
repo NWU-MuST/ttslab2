@@ -15,6 +15,14 @@ import itertools
 
 import openfst
 
+class Decompounder(object):
+    def decompound(self, word):
+        raise NotImplementedError
+
+    def __call__(self, word):
+        return self.decompound(word)
+
+
 def show_fst(fst, fstsymtable):
     import pydot, pylab
     graph = pydot.Dot(rankdir="LR")
@@ -122,7 +130,7 @@ def test_tree():
     my_tree.insert("Steven")
 
 
-class SimpleCompoundSplitter(object):
+class SimpleCompoundSplitter(Decompounder):
     def __init__(self, wordlist):
         self.words = set(wordlist)
         

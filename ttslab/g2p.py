@@ -26,6 +26,9 @@ class G2P(object):
         """
         raise NotImplementedError
 
+    def __call__(self, word):
+        return self.predict_word(word)
+
 
 if __name__ == "__main__":
     import sys, argparse, pickle
@@ -39,6 +42,6 @@ if __name__ == "__main__":
     for line in sys.stdin:
         word = unicode(line, encoding="utf-8").strip()
         try:
-            print("{}\t{}".format(word, " ".join(g2p.predict_word(word))).encode("utf-8"))
+            print("{} {}".format(word, " ".join(g2p.predict_word(word))).encode("utf-8"))
         except Exception as e:
-            print("WARNING: '{}' not converted".format(word), file=sys.stderr)
+            print("WARNING: '{}' not converted".format(word).encode("utf-8"), file=sys.stderr)

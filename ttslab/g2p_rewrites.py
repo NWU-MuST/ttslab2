@@ -91,7 +91,7 @@ class G2P_Rewrites(g2p.G2P):
             try:
                 rulelist = self.ruleset[g]
             except KeyError:
-                raise GraphemeNotDefined("Word: " + word + " Grapheme: " + g)
+                raise g2p.GraphemeNotDefined("Word: " + word + " Grapheme: " + g)
 
             #no need to do the following if stored in the correct order:
             #rulelist.sort(key=lambda x: x.ordinal, reverse=True)
@@ -102,7 +102,7 @@ class G2P_Rewrites(g2p.G2P):
                         phones.append(rule.phoneme)  #only add if not empty string
                     break
             else:
-                raise NoRuleFound#(lc + " " + g + " " + rc)
+                raise g2p.NoRuleFound#(lc + " " + g + " " + rc)
         return phones
 
 class G2P_Rewrites_Semicolon(G2P_Rewrites):

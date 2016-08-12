@@ -213,16 +213,19 @@ class Phoneset(ttslab.phoneset.Phoneset):
         return 0
 
     def _process_cluster(self, cluster, phonelist, match):
-        """ Break cluster into syllables according to the rules defined by
-            T.A. Hall, "English syllabification as the interaction of
-            markedness constraints" in Studia Linguistica, vol. 60, 2006,
+        """ Break cluster into syllables: adapted from: T.A. Hall, "English
+            syllabification as the interaction of markedness
+            constraints" in Studia Linguistica, vol. 60, 2006,
             pp. 1-33
         """
         phonecluster = phonelist[match.start() : match.end()]
 
         if cluster == "VCV":
-            #always split -> V.CV:
-            return "V.CV"
+            C = phonecluster[1]
+            if C != "ŋ":
+                return "V.CV"
+            else:
+                return "VC.V"
 
         if cluster == "VGV":
             return "V.GV"
@@ -246,9 +249,6 @@ class Phoneset(ttslab.phoneset.Phoneset):
         if cluster == "VCCCV":
             CCC = phonecluster[1:4]
             C2C3 = CCC[1:]
-            #if CCC are all obstruents -> VC.CCV:
-            if all([self.is_obstruent(C) for C in CCC]):
-                return "VC.CCV"
             #if C2C3 are wellformed onsets -> VC.CCV:
             if C2C3 in self.features["wellformed_clusters"]:
                 return "VC.CCV"
@@ -256,8 +256,13 @@ class Phoneset(ttslab.phoneset.Phoneset):
                 return "VCC.CV"
 
         if cluster == "VCCCCV":
-            #always split -> VC.CCCV:
-            return "VC.CCCV"
+            CCCC = phonecluster[1:5]
+            if CCCC[1:] in self.features["wellformed_clusters"]:
+                return "VC.CCCV"
+            elif CCCC[2:] in self.features["wellformed_clusters"]:
+                return "VCC.CCV"
+            else:
+                return "VCCC.CV"
 
         if cluster == "VCGV":
             CG = phonecluster[1:3]
