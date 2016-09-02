@@ -566,7 +566,7 @@ def simple_langclass_words(owner, utt, args=None):
 
 
 class Voice(DefaultVoice):
-    pass 
+    pass
 
 #const data
 Voice.VALID_GRAPHS = VALID_GRAPHS
@@ -582,6 +582,31 @@ Voice.FUNCS["time_to_words"] = TIME_TO_WORDS
 #uttprocs
 Voice.normalize_tokens = normalize_tokens
 Voice.langclass_words = simple_langclass_words
+
+################################################################################
+#### For PRASA 2016 experiments with pronundict and G2PS
+import afrikaans_prasa16 as prasa16
+
+class Prasa16Voice(DefaultVoice):
+    pass
+
+#const data
+Prasa16Voice.VALID_GRAPHS = VALID_GRAPHS
+Prasa16Voice.GPOS = GPOS
+Prasa16Voice.PHRASEBREAK_TOKENS = PHRASEBREAK_TOKENS
+#funcs
+Prasa16Voice.FUNCS["num_expand"] = NUM_EXPAND
+Prasa16Voice.FUNCS["char_norm"] = CHAR_NORM
+Prasa16Voice.FUNCS["float_to_words"] = FLOAT_TO_WORDS
+Prasa16Voice.FUNCS["curr_to_words"] = CURR_TO_WORDS
+Prasa16Voice.FUNCS["date_to_words"] = DATE_TO_WORDS
+Prasa16Voice.FUNCS["time_to_words"] = TIME_TO_WORDS
+#uttprocs
+Prasa16Voice.normalize_tokens = normalize_tokens
+Prasa16Voice.langclass_words = simple_langclass_words
+Prasa16Voice.phonetize_words = prasa16.phonetize_words
+################################################################################
+
 
 if __name__ == "__main__":
     from ttslab.lang.afrikaans import Voice
