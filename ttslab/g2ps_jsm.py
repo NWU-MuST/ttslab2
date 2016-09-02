@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""G2P implementation using Sequitur joint-sequence-models (JSMs)...
+""" G2PS implementation using Sequitur JSM model
 """
 from __future__ import unicode_literals, division, print_function #Py2
 
 __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
-import ttslab.g2p as g2p
+import ttslab.g2ps as g2ps
 
 from sequitur import Translator #Get it from: https://www-i6.informatik.rwth-aachen.de/web/Software/g2p.html
 
-class G2P_JSM(g2p.G2P):
+SYLBOUNDCHAR = "."
+
+class G2PS_JSM(g2ps.G2PS):
     def __init__(self, jsmmodel, graphtranstable):
         self.gmap = graphtranstable
         self.model = jsmmodel
@@ -23,15 +25,21 @@ class G2P_JSM(g2p.G2P):
 
     def __setstate__(self, d):
         self.__dict__ = d
-        self.translator = Translator(self.model)
+        self.translator = Translator(self.model)    
 
     def predict_word(self, word):
-        return self.translator(word.translate(self.gmap))
-
+        phonesylbounds = self.translator(word.translate(self.gmap))
+        candsyls = [[]]
+        for e in phonesylbounds:
+            if not e == SYLBOUNDCHAR:
+                candsyls[-1].append(e)
+            else:
+                candsyls.append([])
+        return [s for s in candsyls if s]
 
 if __name__ == "__main__":
     import sys, codecs, argparse, pickle
-    import ttslab.g2p_jsm
+    import ttslab.g2ps_jsm
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('modelfn', metavar='MODELFN', type=str, default=None, help="Load from Sequitur model file (pickle)")
     parser.add_argument('graphmapfn', metavar='GRAPHMAPFN', type=str, default=None, help="Load grapheme map from file (tsv)")
@@ -51,15 +59,18 @@ if __name__ == "__main__":
                        in zip(c1, c2))
 
     with open(args.modelfn) as infh:
-        g2p = ttslab.g2p_jsm.G2P_JSM(pickle.load(infh), gtranstable)
+        g2ps = ttslab.g2ps_jsm.G2PS_JSM(pickle.load(infh), gtranstable)
 
     if args.dumpmodel:
-        print(pickle.dumps(g2p))
+        print(pickle.dumps(g2ps))
     else:
         for line in sys.stdin:
             word = unicode(line, encoding="utf-8").strip()
             try:
-                print("{}\t{}".format(word, " ".join(g2p.predict_word(word))).encode("utf-8"))
+                syls = g2ps(word)
+                print("{} {} {}".format(word,
+                                        "".join(map(str, map(len, syls))),
+                                        " ".join(itertools.chain(*syls))).encode("utf-8"))
             except Exception as e:
                 print("WARNING: '{}' not converted".format(word), file=sys.stderr)
                 print(e, file=sys.stderr)
