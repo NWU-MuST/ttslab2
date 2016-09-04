@@ -106,6 +106,36 @@ def numsylsaftersyl_inphrase(sylitem, feat, featvalue):
     return len([syl for syl in syllist[idx+1:] if syl[feat] == featvalue])
 
 
+def syldistprev_inword(sylitem, feat, featvalue):
+    """ the number of syllables from the current syllable to the
+        previous syllable with 'feat' = 'featvalue'
+    """
+    sylitem = sylitem.get_item_in_relation("SylStructure")
+    count = 1
+    nextsyl = sylitem.prev_item 
+    while nextsyl:
+        if feat in nextsyl:
+            if nextsyl[feat] == featvalue:
+                return count
+        count += 1
+        nextsyl = nextsyl.prev_item
+    return 0
+
+def syldistnext_inword(sylitem, feat, featvalue):
+    """ the number of syllables from the current syllable to the
+        next syllable with 'feat' = 'featvalue'
+    """
+    sylitem = sylitem.get_item_in_relation("SylStructure")
+    count = 1
+    nextsyl = sylitem.next_item 
+    while nextsyl:
+        if feat in nextsyl:
+            if nextsyl[feat] == featvalue:
+                return count
+        count += 1
+        nextsyl = nextsyl.next_item
+    return 0
+
 def syldistprev(sylitem, feat, featvalue):
     """ the number of syllables from the current syllable to the
         previous syllable with 'feat' = 'featvalue'
