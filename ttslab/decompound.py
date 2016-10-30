@@ -108,12 +108,12 @@ class Tree():
             syms.update(n.getsyms())
         return syms
 
-    def makelattice(self, fst, startstate, symtable, cost):
+    def makelattice(self, fst, startstate, symtable, cost, firstword):
         length = self.nleafnodes()
-        fst.AddArc(startstate, symtable[self.value], symtable[self.value], cost(self.value), startstate+length)
+        fst.AddArc(startstate, symtable[self.value], symtable[self.value], cost(self.value, firstword), startstate+length)
         offset = 0
         for n in self.nodes:
-            n.makelattice(fst, startstate+offset, symtable, cost)
+            n.makelattice(fst, startstate+offset, symtable, cost, firstword=False)
             offset += n.nleafnodes()
 
     def __str__(self):
@@ -168,7 +168,9 @@ class SimpleCompoundSplitter(Decompounder):
             right = rootnode.insert(word[bestidx:])
             self._split(word[bestidx:], right)
 
-    def wordcost(self, word):
+    def wordcost(self, word, firstword):
+        if firstword:
+            return 0.0
         if word in self.words:
             return -1.0
         return 1.0
@@ -187,7 +189,7 @@ class SimpleCompoundSplitter(Decompounder):
         [fst.AddState() for i in range(nleafnodes + 1)]
         fst.SetFinal(nleafnodes, 0.0)
         fst.SetStart(0)
-        tree.makelattice(fst, 0, symtable, self.wordcost)
+        tree.makelattice(fst, 0, symtable, self.wordcost, firstword=True)
         #display for debugging
         # fstsymtable = openfst.SymbolTable(b"default")
         # for i, sym in enumerate(symtablel):
@@ -200,6 +202,7 @@ class SimpleCompoundSplitter(Decompounder):
         
 
 def test(wordlistfn, compword):
+    import codecs
     with codecs.open(wordlistfn, encoding="utf-8") as infh:
         wordlist = infh.read().split()
     csplitter = SimpleCompoundSplitter(wordlist)
@@ -207,5 +210,11 @@ def test(wordlistfn, compword):
     return splitform
     
 if __name__ == "__main__":
-    print(test(sys.argv[1], sys.argv[2]))
-    #test_tree()
+    import sys, codecs, pickle
+    with codecs.open(sys.argv[1], encoding="utf-8") as infh:
+        wordlist = infh.read().split()
+    decomp = SimpleCompoundSplitter(wordlist)
+
+    for line in sys.stdin:
+        word = unicode(line.strip(), encoding="utf-8")
+        print("-".join(decomp.decompound(word)).encode("utf-8"))

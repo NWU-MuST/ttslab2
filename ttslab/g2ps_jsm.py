@@ -38,12 +38,12 @@ class G2PS_JSM(g2ps.G2PS):
         return [s for s in candsyls if s]
 
 if __name__ == "__main__":
-    import sys, codecs, argparse, pickle
+    import sys, codecs, argparse, pickle, itertools
     import ttslab.g2ps_jsm
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('modelfn', metavar='MODELFN', type=str, default=None, help="Load from Sequitur model file (pickle)")
     parser.add_argument('graphmapfn', metavar='GRAPHMAPFN', type=str, default=None, help="Load grapheme map from file (tsv)")
-    parser.add_argument('--dumpmodel', dest='dumpmodel', action='store_true', help="Just dump G2P model (pickle)")
+    parser.add_argument('--dumpmodel', dest='dumpmodel', action='store_true', help="Just dump G2PS model (pickle)")
     parser.set_defaults(dumpmodel=False)
     args = parser.parse_args()
 
