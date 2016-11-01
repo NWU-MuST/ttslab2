@@ -9,6 +9,7 @@ from __future__ import unicode_literals, division, print_function #Py2
 __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
+import sys
 import os
 import math
 import re
@@ -81,6 +82,102 @@ for i from 1 to num_frames
 endfor
 """
 
+
+DEF_NUMFORMANTS = 5
+DEF_MAXFORMANTFREQ = 5500.0
+DEF_FORMANTWINDOWLEN = 0.025
+DEF_FORMANTPREEMPH = 50.0
+
+PRAAT_GET_FORMANTS = \
+"""#
+form Fill attributes
+   text input_wav_file_name
+endform
+
+Read from file... 'input_wav_file_name$'
+
+To Formant (burg)... %(timestep)s %(num_formants)s %(max_formantfreq)s %(window_len)s %(pre_emph)s
+
+starttime = Get start time
+endtime = Get end time
+steptime= Get time step
+
+printline 'starttime'
+printline 'endtime'
+printline 'steptime'
+
+num_frames = Get number of frames
+for i from 1 to num_frames
+        time = Get time from frame number... i
+        values$ = ""
+        for j from 1 to %(num_formants)s
+                value = Get value at time... j time Hertz Linear
+                if value <> undefined
+                        values$ = values$ + " " + string$('value:7')
+                else
+                        values$ = values$ + " " + "--undefined--"
+                endif
+        endfor
+        printline 'time:7' 'values$'
+endfor
+"""
+
+def get_formants(track, wavfilelocation, numformants=DEF_NUMFORMANTS, timestep=DEF_TIMESTEP, maxformantfreq=DEF_MAXFORMANTFREQ, windowlen=DEF_FORMANTWINDOWLEN, preemph=DEF_FORMANTPREEMPH):
+    """Use "praat" to extract formants...
+    """
+    wavfilelocation = os.path.abspath(wavfilelocation)
+    
+    parms = {"timestep": float(timestep),
+             "num_formants": int(numformants),
+             "max_formantfreq": float(maxformantfreq),
+             "window_len": float(windowlen),
+             "pre_emph": float(preemph)}
+
+    #write temp file - Praat script
+    tempfh = NamedTemporaryFile()
+    tempfh.write(PRAAT_GET_FORMANTS % parms)
+    tempfh.flush()
+
+    p = subprocess.Popen([PRAAT_BIN,
+                          tempfh.name,
+                          wavfilelocation],
+                         stdout=subprocess.PIPE)
+    stdout_text = p.communicate()[0]
+    tempfh.close()
+
+    lines = stdout_text.splitlines()
+
+    starttime = float(lines[0])
+    endtime = float(lines[1])
+    timestep = float(lines[2])
+
+    remlines = lines[3:]
+    
+    times = np.zeros(len(remlines))
+    times[:] = np.nan
+    values = np.zeros((len(remlines), int(numformants)))
+    values[:] = np.nan
+    for i, line in enumerate(remlines):
+        fields = line.split()
+        times[i] = float(fields[0])
+        for j, e in enumerate(fields[1:]):
+            try:
+                values[i,j] = float(e)
+            except ValueError:
+                print("get_formants() WARNING: Formant value left as NaN", file=sys.stderr)
+                pass
+    track.numformants = int(numformants)
+    track.maxformantfreq = float(maxformantfreq)
+    track.windowlen = float(windowlen)
+    track.preemph = preemph
+    track.times = times
+    track.values = values
+    track.praattype = "FormantGrid"
+    track._starttime = starttime
+    track._endtime = endtime
+    track.name = os.path.splitext(os.path.basename(wavfilelocation))[0]
+    return track
+    
 
 
 def get_f0(track, wavfilelocation, minpitch=DEF_MINPITCH, maxpitch=DEF_MAXPITCH, timestep=DEF_TIMESTEP, fixocterrs=False, smoothingbandwidth=None, semitones=False):
