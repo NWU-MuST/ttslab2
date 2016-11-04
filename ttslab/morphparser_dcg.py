@@ -2,18 +2,24 @@
 # -*- coding: utf-8 -*-
 """Loads a simplified form of Definite Clause Grammar (each rule only
    either maps to terminals or nonterminals and no overlap between
-   terminal and nonterminal symbols -- see for example `zul.dvn.dcg`)
+   terminal and nonterminal symbols -- see for example:
+   `https://github.com/NWU-MuST/bristol-mt-morphology/blob/master/DvN.ZuluDCG.txt`)
    and creates OpenFST grammars to parse and classify words.
 """
 from __future__ import unicode_literals, print_function, division
 
+__author__ = "Daniel van Niekerk"
+__email__ = "dvn.demitasse@gmail.com"
+
 import os, sys
+import codecs, pickle
 import re
 from collections import defaultdict
 import tempfile
+import pprint
 
-import morphparser
-import pywrapfst as ot
+import ttslab.morphparser as morphparser
+import pywrapfst as wfst
 
 RULE_RE = re.compile("(?P<head>\w+)\s*\-\-\>\s*(?P<body>.+?)\.")
 EPS = "_"
@@ -59,67 +65,30 @@ def get_undefsyms(dcg, stoi):
 
 def make_kleeneplus(s, graphs, stoi):
     """one-or-more-graphs"""
-    fst = ot.Fst()
+    fst = wfst.Fst()
     start = fst.add_state()
     end = fst.add_state()
     fst.set_start(start)
-    fst.set_final(end, ot.Weight.One(fst.weight_type()))
+    fst.set_final(end, wfst.Weight.One(fst.weight_type()))
     for g in graphs:
-        fst.add_arc(start, ot.Arc(stoi[g], stoi[s], ot.Weight.One(fst.weight_type()), end))
-        fst.add_arc(end, ot.Arc(stoi[g], 0, ot.Weight.One(fst.weight_type()), end))
+        fst.add_arc(start, wfst.Arc(stoi[g], stoi[g], wfst.Weight.One(fst.weight_type()), end))
+        fst.add_arc(end, wfst.Arc(stoi[g], stoi[g], wfst.Weight.One(fst.weight_type()), end))
     return fst
 
-def replace_arc(rootfst, subfst, sym, label="input"):
-    sstart = subfst.start()
-    smap = {}
-    for rs in rootfst.states():
-        arcs = [(a.ilabel, a.olabel, a.weight, a.nextstate) for a in rootfst.arcs(rs)]
-        if label == "input":
-            arcs_other = [a for a in arcs if a[0] != sym]
-            arcs_replace = [a for a in arcs if a[0] == sym]
-        else:
-            arcs_other = [a for a in arcs if a[1] != sym]
-            arcs_replace = [a for a in arcs if a[1] == sym]
-        rootfst.delete_arcs(rs)
-        for ra in arcs_other:
-            rootfst.add_arc(rs, ot.Arc(*ra))
-        for ra in arcs_replace:
-            todo = [sstart]
-            done = set()
-            s = rootfst.add_state()
-            rootfst.add_arc(rs, ot.Arc(0, 0, ot.Weight.One(rootfst.weight_type()), s))
-            smap[sstart] = s
-            while todo:
-                ss = todo.pop(0)
-                done.add(ss)
-                if subfst.final(ss) != ot.Weight.Zero(rootfst.weight_type()):
-                    rootfst.add_arc(smap[ss], ot.Arc(0, 0, ot.Weight.One(rootfst.weight_type()), ra[-1]))
-                for sa in subfst.arcs(ss):
-                    ns = sa.nextstate
-                    if ns not in smap:
-                        s = rootfst.add_state()
-                        smap[ns] = s
-                    if ns not in todo and ns not in done:
-                        todo.append(ns)
-                    rootfst.add_arc(smap[ss], ot.Arc(sa.ilabel, sa.olabel, sa.weight, smap[ns]))
-
-
 def make_termfst(s, paths, stoi):
-    fst = ot.Fst()
-    prestart = fst.add_state()
-    fst.set_start(prestart)
+    fst = wfst.Fst()
     start = fst.add_state()
-    fst.add_arc(prestart, ot.Arc(0, stoi[s], ot.Weight.One(fst.weight_type()), start))
+    fst.set_start(start)
     for path in paths:
         a = start
         for g in path:
             b = fst.add_state()
-            fst.add_arc(a, ot.Arc(stoi[g], 0, ot.Weight.One(fst.weight_type()), b))
+            fst.add_arc(a, wfst.Arc(stoi[g], stoi[g], wfst.Weight.One(fst.weight_type()), b))
             a = b
-        fst.set_final(b, ot.Weight.One(fst.weight_type()))
-    fst2 = ot.determinize(fst)
-    fst2.minimize()
-    return fst2
+        fst.set_final(b, wfst.Weight.One(fst.weight_type()))
+    fst = wfst.determinize(fst)
+    fst.minimize()
+    return fst
 
 
 def make_termfsts(dcg, graphs, stoi):
@@ -129,37 +98,15 @@ def make_termfsts(dcg, graphs, stoi):
     fsts = {}
     for s in undefsyms:
         fsts[s] = make_kleeneplus(s, graphs, stoi)
-        save_dot(fsts[s], stoi, "tmp/"+s+".dot")
     for s in dcg["terminals"]:
         fsts[s] = make_termfst(s, dcg["terminals"][s], stoi)        
-        save_dot(fsts[s], stoi, "tmp/"+s+".dot")
     return fsts
 
 
-def make_fst(s, dcg, stoi):
-    fstcoll = {}
-    fst = ot.Fst()
-    prestart = fst.add_state()
-    fst.set_start(prestart)
-    start = fst.add_state()
-    fst.add_arc(prestart, ot.Arc(0, stoi[s], ot.Weight.One(fst.weight_type()), start))
-    for path in dcg[s]:
-        a = start
-        for ss in path:
-            b = fst.add_state()
-            if ss in dcg and ss not in fstcoll:
-                fstcoll[ss] = make_fst(ss, dcg, stoi)
-            fst.add_arc(a, ot.Arc(stoi[ss], 0, ot.Weight.One(fst.weight_type()), b))
-            a = b
-        fst.set_final(b, ot.Weight.One(fst.weight_type()))
-    #print(s, "fstcoll", fstcoll.keys(), file=sys.stderr)
-    for sym in fstcoll:
-        replace_arc(fst, fstcoll[sym], stoi[sym])
-    return fst
-
 def save_dot(fst, stoi=None, fn="_fst.dot"):
+    fst = fst.copy()
     if stoi is not None:
-        st = ot.SymbolTable()
+        st = wfst.SymbolTable()
         for k, v in stoi.iteritems():
             st.add_symbol(k.encode("utf-8"), v)
             fst.set_input_symbols(st)
@@ -168,43 +115,136 @@ def save_dot(fst, stoi=None, fn="_fst.dot"):
     
 
 def make_input(chars, stoi):
-    fst = ot.Fst()
+    fst = wfst.Fst()
     s0 = fst.add_state()
     fst.set_start(s0)
     cs = s0
     for c in chars:
         ns = fst.add_state()
-        fst.add_arc(cs, ot.Arc(stoi[c], stoi[c], ot.Weight.One(fst.weight_type()), ns))
+        fst.add_arc(cs, wfst.Arc(stoi[c], stoi[c], wfst.Weight.One(fst.weight_type()), ns))
         cs = ns
-    fst.set_final(cs, ot.Weight.One(fst.weight_type()))
+    fst.set_final(cs, wfst.Weight.One(fst.weight_type()))
     return fst
+
+
+def make_rtn(s, dcg, stoi, fstcoll):
+    fst = wfst.Fst()
+    start = fst.add_state()
+    fst.set_start(start)
+    for path in dcg[s]:
+        #print(path, file=sys.stderr)
+        a = start
+        for ss in path:
+            b = fst.add_state()
+            if ss in dcg and ss not in fstcoll:
+                print("\t\tnew fst: {}".format(ss.upper()), file=sys.stderr)
+                make_rtn(ss, dcg, stoi, fstcoll)
+            fst.add_arc(a, wfst.Arc(stoi[ss], stoi[ss], wfst.Weight.One(fst.weight_type()), b))
+            a = b
+        fst.set_final(b, wfst.Weight.One(fst.weight_type()))
+    fst = wfst.determinize(fst)
+    fst.minimize()
+    fstcoll[s] = fst
+    return fstcoll
 
 
 class Morphparse_DCG(morphparser.Morphparse):
     def __init__(self, dcg, descr):
+        #print("Morphparse_DCG.__init__()", file=sys.stderr)
+        #print("dcg[nonterminals]: {}".format(pprint.pformat(dcg["nonterminals"])), file=sys.stderr)
+        ###Make symbol tables
         othersyms = set()
         for pos in descr["renamesyms"]:
             othersyms.update([e[1] for e in descr["renamesyms"][pos]])
+        self.bounds = descr["bounds"]
         self.itos, self.stoi = make_symmaps(dcg, descr["graphs"], othersyms)
-        #print(self.stoi, file=sys.stderr)
-        fsts = make_termfsts(dcg, descr["graphs"], self.stoi)
-        dcgall = dcg["nonterminals"]
-        dcgall.update(dcg["terminals"])
+
+        # #DEBUG DUMP SYMTABLES
+        # with codecs.open("tmp/stoi.pickle", "w", encoding="utf-8") as outfh:
+        #     pickle.dump(self.stoi, outfh)
+        # with codecs.open("tmp/itos.pickle", "w", encoding="utf-8") as outfh:
+        #     pickle.dump(self.itos, outfh)
+
+        termfsts = make_termfsts(dcg, descr["graphs"], self.stoi)
+        # #DEBUG DUMP FST
+        # for k in termfsts:
+        #     print("DEBUG dumping:", k, file=sys.stderr)
+        #     save_dot(termfsts[k], self.stoi, "tmp/termfst_"+k+".dot")
+        #     termfsts[k].write("tmp/termfst_"+k+".fst")
+            
         self.fsts = {}
+        ###Expand/make non-terminal FSTs for each POS category
         for pos in descr["pos"]:
-            #print("POS:", pos, file=sys.stderr)
-            self.fsts[pos] = make_fst(pos, dcgall, self.stoi)
-            for sym in set(fsts).difference(dcgall): #also do open-class symbols
-                replace_arc(self.fsts[pos], fsts[sym], self.stoi[sym])
-            if pos in descr["renamesyms"]:
-                self.fsts[pos].relabel_pairs(opairs=map(lambda x: (self.stoi[x[0]], self.stoi[x[1]]), descr["renamesyms"][pos]))
-            self.fsts[pos].rmepsilon()
-            save_dot(self.fsts[pos], self.stoi, pos+".dot")
-            # try:
-            #     self.fsts[pos] = ot.determinize(self.fsts[pos])
-            # except ot.FstOpError:
-            #     pass
-        
+            print("Making/expanding non-terminal fst for POS:", pos, file=sys.stderr)
+            fstcoll = make_rtn(pos, dcg["nonterminals"], self.stoi, {})
+            # print("__init__(): fstcoll: {}".format(fstcoll.keys()), file=sys.stderr)
+            # for sym in fstcoll:
+            #     #DEBUG DUMP FST
+            #     save_dot(fstcoll[sym], self.stoi, "tmp/"+pos+"_orig_"+sym+".dot")
+            #     fstcoll[sym].write("tmp/"+pos+"_orig_"+sym+".fst")
+
+            #replace non-terminals
+            replace_pairs = [(self.stoi[pos], fstcoll.pop(pos))]
+            for k, v in fstcoll.iteritems():
+                replace_pairs.append((self.stoi[k], v))
+            fst = wfst.replace(replace_pairs, call_arc_labeling="both")
+            fst.rmepsilon()
+            fst = wfst.determinize(fst)
+            fst.minimize()
+            # #DEBUG DUMP FST
+            # save_dot(fst, self.stoi, "tmp/"+pos+"_expanded.dot")
+            # fst.write("tmp/"+pos+"_expanded.fst")
+            # if True: #DEBUGGING
+            #     fst2 = fst.copy()
+            #     #rename symbols (simplify) 
+            #     if pos in descr["renamesyms"] and descr["renamesyms"][pos]:
+            #         labpairs = map(lambda x: (self.stoi[x[0]], self.stoi[x[1]]), descr["renamesyms"][pos])
+            #         fst2.relabel_pairs(opairs=labpairs, ipairs=labpairs)
+            #     fst2.rmepsilon()
+            #     fst2 = wfst.determinize(fst2)
+            #     fst2.minimize()            
+            #     #DEBUG DUMP FST
+            #     save_dot(fst2, self.stoi, "tmp/"+pos+"_expandedsimple.dot")
+            #     fst2.write("tmp/"+pos+"_expandedsimple.fst")            
+
+            #replace terminals
+            replace_pairs = [(self.stoi[pos], fst)]
+            for k, v in termfsts.iteritems():
+                replace_pairs.append((self.stoi[k], v))
+            fst = wfst.replace(replace_pairs, call_arc_labeling="both")
+            fst.rmepsilon()
+            fst = wfst.determinize(fst)
+            fst.minimize()
+            # #DEBUG DUMP FST
+            # save_dot(fst, self.stoi, "tmp/"+pos+"_expanded2.dot")
+            # fst.write("tmp/"+pos+"_expanded2.fst")
+
+            #rename symbols (simplify) JUST FOR DEBUGGING
+            if pos in descr["renamesyms"] and descr["renamesyms"][pos]:
+                labpairs = map(lambda x: (self.stoi[x[0]], self.stoi[x[1]]), descr["renamesyms"][pos])
+                fst.relabel_pairs(opairs=labpairs, ipairs=labpairs)
+            fst.rmepsilon()
+            fst = wfst.determinize(fst)
+            fst.minimize()            
+            # #DEBUG DUMP FST
+            # save_dot(fst, self.stoi, "tmp/"+pos+"_prefinal.dot")
+            # fst.write("tmp/"+pos+"_prefinal.fst")
+
+            #Convert into transducer:
+            #split I/O symbols by convention here: input symbols are single characters:
+            #Input syms (relabel outputs to EPS):
+            syms = [k for k in self.stoi if len(k) == 1]
+            labpairs = map(lambda x: (self.stoi[x], self.stoi[EPS]), syms)
+            fst.relabel_pairs(opairs=labpairs)
+            #Output syms (relabel inputs to EPS):
+            syms = [k for k in self.stoi if len(k) != 1]
+            labpairs = map(lambda x: (self.stoi[x], self.stoi[EPS]), syms)
+            fst.relabel_pairs(ipairs=labpairs)
+            # #DEBUG DUMP FST
+            # save_dot(fst, self.stoi, "tmp/"+pos+"_final.dot")
+            # fst.write("tmp/"+pos+"_final.fst")
+            self.fsts[pos] = fst
+
     def __getstate__(self):
         fsts = {}
         for pos in self.fsts:
@@ -217,24 +257,25 @@ class Morphparse_DCG(morphparser.Morphparse):
                 os.close(fd)
                 os.remove(path)
             fsts[pos] = serialisedfst
-        return {"fsts": fsts,
-                "itos": self.itos,
-                "stoi": self.stoi}
+        d = self.__dict__
+        d["fsts"] = fsts
+        return d
 
     def __setstate__(self, d):
-        self.fsts = {}
-        for pos in d["fsts"]:
+        fsts = {}
+        fsts = d.pop("fsts")
+        for pos in fsts:
             try:
                 fd, path = tempfile.mkstemp()
                 with open(path, "wb") as outfh:
-                    outfh.write(d["fsts"][pos])
-                fst = ot.Fst.read(path)
+                    outfh.write(fsts[pos])
+                fst = wfst.Fst.read(path)
             finally:
                 os.close(fd)
                 os.remove(path)
-            self.fsts[pos] = fst
-        self.itos = d["itos"]
-        self.stoi = d["stoi"]
+            fsts[pos] = fst
+        d["fsts"] = fsts
+        self.__dict__ = d
 
     def parse_word(self, word, pos=None):
         if pos:
@@ -245,21 +286,44 @@ class Morphparse_DCG(morphparser.Morphparse):
         for pos in posl:
             #print("parse_word(): trying POS:", pos, file=sys.stderr)
             ifst = make_input(word, self.stoi)
-            ofst = ot.compose(ifst, self.fsts[pos])
+            ofst = wfst.compose(ifst, self.fsts[pos])
             ofstnstates = len(list(ofst.states()))
             if not ofstnstates:
                 #print("parse_word(): no parse for POS:", pos, file=sys.stderr)
                 continue
             #print("parse_word(): parse successful for POS:", pos, file=sys.stderr)
-            save_dot(ofst, self.stoi, "output.dot")
+            #save_dot(ofst, self.stoi, "tmp/output.dot")
             paths = []
             dfs_walk(ofst, self.itos, ofst.start(), None, [], paths)
             for path in paths:
                 #print(" ".join([e[1] for e in path if e[1]]).encode("utf-8"))
-                parses.add(path2parse(path))
-        parses = list(sorted(parses))
+                parses.add("<{}>".format(pos) + path2parse(path))
+        parses = [simpbounds(p, self.bounds) for p in sorted(parses)]
         return parses
-        
+
+    def parse_word_simple(self, word, pos=None):
+        re_ins = re.compile("|".join(["<noun>", "<verb>", "<adj>", "<adv>", "<st>"]))
+        re_outs = re.compile("|".join(["<cop>", "<loc>", "<pos>", "<prep>", "<pron>", "<ques>", "<rel>", "<pf>", "<sf>"]))
+        parses = self.parse_word(word, pos=pos)
+        for i, p in enumerate(parses):
+            p = re_ins.sub("<", p)
+            p = re_outs.sub(">", p)
+            p = p.replace("<>", "")
+            p = re.sub("^>", "", p)
+            for m in reversed(list(re.finditer("<", p))[1:]):
+                p = p[:m.start()] + p[m.end():]
+            if "<" in p and not ">" in p:
+                p = p + ">"
+            parses[i] = p
+        return list(sorted(set(parses)))
+            
+
+def simpbounds(parse, bounds):
+    for b in bounds:
+        for m in reversed(list(re.finditer("<{}>".format(b), parse))[1:]):
+            parse = parse[:m.start()] + parse[m.end():]
+    return parse
+
 def path2parse(path):
     parse = []
     for i, o in path:
@@ -270,14 +334,17 @@ def path2parse(path):
     return "".join(parse)
     
 def dfs_walk(fst, itos, state, labels, path, fullpaths):
+    #print(len(fullpaths), state, file=sys.stderr)
     path = path[:]
     if labels:
         path.append(labels)
-    if fst.final(state) != ot.Weight.Zero(fst.weight_type()): #nextstate is final?
+    if fst.final(state) != wfst.Weight.Zero(fst.weight_type()): #state is final?
         fullpaths.append(path)
+    #print(state, len(list(fst.arcs(state))), file=sys.stderr)
     for arc in fst.arcs(state):
         labs = (itos[arc.ilabel], itos[arc.olabel])
         dfs_walk(fst, itos, arc.nextstate, labs, path, fullpaths)
+        
     
 if __name__ == "__main__":
     import sys, codecs, argparse, pickle, json

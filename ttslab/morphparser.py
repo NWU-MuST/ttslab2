@@ -30,15 +30,19 @@ if __name__ == "__main__":
     import sys, codecs, argparse, pickle
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('modelfn', metavar='MODELFN', type=str, default=None, help="Load from model file (pickle format)")
+    parser.add_argument('--simple', action='store_true')
     args = parser.parse_args()
     
     with open(args.modelfn) as infh:
         morphparse = pickle.load(infh)
-    
+        
     for line in sys.stdin:
         word = unicode(line, encoding="utf-8").strip()
         #try:
-        print("{} {}".format(word, " ".join(morphparse(word)).encode("utf-8")))
+        if args.simple:
+            print("{} {}".format(word, " ".join(morphparse.parse_word_simple(word)).encode("utf-8")))
+        else:
+            print("{} {}".format(word, " ".join(morphparse(word)).encode("utf-8")))
         #except Exception as e:
         #    print("WARNING: '{}' not parsed".format(word).encode("utf-8"), file=sys.stderr)
         #    print(e, file=sys.stderr)
