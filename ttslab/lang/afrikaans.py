@@ -532,6 +532,18 @@ def normalize_tokens(owner, utt, args=None):
             tokentextlist = owner.FUNCS["float_to_words"](tokentext, owner.FUNCS["num_expand"])
         elif token["class"] == "integer":
             tokentextlist = owner.FUNCS["num_expand"](int(tokentext)).split()
+            #DEMIT Hack: possible/probable year:
+            if int(tokentext) >= 1500 and int(tokentext) <= 2100:
+                yearn = int(tokentext)
+                if yearn in [1500, 1600, 1700, 1800, 1900]:
+                    tokentextlist = [owner.FUNCS["num_expand"](int(yearn/100.0))] + ["honderd"]
+                elif tokentext[2] == "0":
+                    if tokentext[:2] in ["15", "16", "17", "18", "19"]:
+                        tokentextlist = owner.FUNCS["num_expand"](int(yearn/100.0)).split() + ["honderd", "en"] + owner.FUNCS["num_expand"](int(tokentext[-1:])).split()
+                    elif tokentext[:2] == ["20"]:
+                        tokentextlist = owner.FUNCS["num_expand"](int(tokentext)).split()
+                else:
+                    tokentextlist = owner.FUNCS["num_expand"](int(tokentext[:2])).split() + owner.FUNCS["num_expand"](int(tokentext[2:])).split()
         else:
             tokentextlist = [tokentext]
         for wordname in tokentextlist:

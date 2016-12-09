@@ -7,6 +7,7 @@ from __future__ import unicode_literals, division, print_function #Py2
 __author__ = "Daniel van Niekerk"
 __email__ = "dvn.demitasse@gmail.com"
 
+import re
 
 patterns1 = {0: ["nul"],
              1: ["een"],
@@ -45,7 +46,7 @@ patterns1 = {0: ["nul"],
              1000000000000000000: ["%(div)s triljoen", "%(div)s triljoen %(mod)s"]
             }
 
-def expand(n):
+def _expand(n):
     patterns = patterns1
     if n <= 1:
         return patterns[n][0]
@@ -63,6 +64,18 @@ def expand(n):
             t = patterns[pn][0]
         divt = expand(d)
         return t % {"div": divt, "mod": modt}
+
+def expand(n):
+    """This one adds 'en' in certain places...
+    """
+    s = _expand(n)
+    bignums = ["honderd", "duisend", "miljoen", "miljard", "biljoen", "biljard", "triljoen"]
+    smallnums = [patterns1[n][0] for n in range(1, 20)]
+    midnums = [patterns1[n*10][0] for n in range(2, 10)]
+    patt = "(%s)\s((?:%s)?\s?(?:%s))$" % ("|".join(bignums), "|".join(midnums), "|".join(smallnums))
+    s = re.sub(patt, "\\1 en \\2", s)
+    return s
+
 
 if __name__ == "__main__":
     import os, sys
