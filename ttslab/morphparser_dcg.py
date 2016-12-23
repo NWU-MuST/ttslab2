@@ -350,7 +350,7 @@ def dfs_walk(fst, itos, state, labels, path, fullpaths):
     
 if __name__ == "__main__":
     import sys, codecs, argparse, pickle, json
-    import morphparser_dcg
+    from ttslab import morphparser_dcg
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('dcgfn', metavar='DCGFN', type=str, help="input DCG filename")
     parser.add_argument('descrfn', metavar='DESCRFN', type=str, help="JSON file containing a description of how to interpret the DCG file (e.g. graphemes and POS categories etc.)")    
