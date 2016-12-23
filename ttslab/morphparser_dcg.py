@@ -306,14 +306,16 @@ class Morphparse_DCG(morphparser.Morphparse):
         re_outs = re.compile("|".join(["<cop>", "<loc>", "<pos>", "<prep>", "<pron>", "<ques>", "<rel>", "<pf>", "<sf>"]))
         parses = self.parse_word(word, pos=pos)
         for i, p in enumerate(parses):
-            p = re_ins.sub("<", p)
-            p = re_outs.sub(">", p)
-            p = p.replace("<>", "")
-            p = re.sub("^>", "", p)
-            for m in reversed(list(re.finditer("<", p))[1:]):
+            p = re_ins.sub("{", p)
+            p = re_outs.sub("}", p)
+            p = p.replace("{}", "")
+            p = re.sub("^}", "", p)
+            for m in reversed(list(re.finditer("{", p))[1:]):
                 p = p[:m.start()] + p[m.end():]
-            if "<" in p and not ">" in p:
-                p = p + ">"
+            if "{" in p and not "}" in p:
+                p = p + "}"
+            if "}" in p and not "{" in p:
+                p = p.replace("}", "")
             parses[i] = p
         return list(sorted(set(parses)))
             
