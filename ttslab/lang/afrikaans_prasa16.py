@@ -36,7 +36,7 @@ def word_to_phones(word_item, phoneset, pronunaddendum, pronundict, g2ps, syllab
     else:  #word not in PD
         try:
             syllables = g2ps.predict_word(word_item["name"])
-            print("DEMIT: obtained syllables from G2PS model", file=sys.stderr)
+            print("DEMIT: obtained syllables from G2PS model for: {}".format(word_item["name"]).encode("utf-8"), file=sys.stderr)
         except Exception as e:
             warns = "WARNING: No pronunciation found for '%s'" % word_item["name"]
             print(warns.encode("utf-8"), file=sys.stderr)
