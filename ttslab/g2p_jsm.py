@@ -26,29 +26,35 @@ class G2P_JSM(g2p.G2P):
         self.translator = Translator(self.model)
 
     def predict_word(self, word):
-        return self.translator(word.translate(self.gmap))
-
+        if self.gmap is not None:
+            phones = self.translator(word.translate(self.gmap))
+        else:
+            phones = self.translator(word)
+        return phones
 
 if __name__ == "__main__":
     import sys, codecs, argparse, pickle
     import ttslab.g2p_jsm
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('modelfn', metavar='MODELFN', type=str, default=None, help="Load from Sequitur model file (pickle)")
-    parser.add_argument('graphmapfn', metavar='GRAPHMAPFN', type=str, default=None, help="Load grapheme map from file (tsv)")
+    parser.add_argument('--graphmapfn', dest="graphmapfn", type=str, default=None, help="Load grapheme map from file (tsv)")
     parser.add_argument('--dumpmodel', dest='dumpmodel', action='store_true', help="Just dump G2P model (pickle)")
     parser.set_defaults(dumpmodel=False)
     args = parser.parse_args()
 
-    c1 = []
-    c2 = []
-    with codecs.open(args.graphmapfn, encoding="utf-8") as infh:
-        for line in infh:
-            a, b = line.split()
-            c1.append(a)
-            c2.append(b)
-    gtranstable = dict((ord(inchar), ord(outchar))
-                       for inchar, outchar
-                       in zip(c1, c2))
+    if args.graphmapfn is not None:
+        c1 = []
+        c2 = []
+        with codecs.open(args.graphmapfn, encoding="utf-8") as infh:
+            for line in infh:
+                a, b = line.split()
+                c1.append(a)
+                c2.append(b)
+        gtranstable = dict((ord(inchar), ord(outchar))
+                           for inchar, outchar
+                           in zip(c1, c2))
+    else:
+        gtranstable = None
 
     with open(args.modelfn) as infh:
         g2p = ttslab.g2p_jsm.G2P_JSM(pickle.load(infh), gtranstable)
