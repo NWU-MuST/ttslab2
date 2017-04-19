@@ -201,10 +201,13 @@ def test(testsents, tagger):
         reftags = sentence[1]
         total += len(reftags)
         tagged_sentence = tagger.tag(sentence[0]) #words only
-        taggertags = [e[1] for e in tagged_sentence]
-        for ref, result in zip(reftags, taggertags):
+        #taggertags = [e[1] for e in tagged_sentence]
+        #from pprint import pprint
+        #pprint(zip(reftags, tagged_sentence))
+        for ref, result in zip(reftags, tagged_sentence):
             if ref == result:
                 correct += 1
+    print(correct, total)
     return correct, total
 
 def test_fromfn(testfn, modelfn):
@@ -221,4 +224,4 @@ if __name__ == "__main__":
             pickle.dump(tagger, outfh, protocol=2)
     elif sys.argv[1] == "test":
         correct, total = test_fromfn(sys.argv[2], sys.argv[3])
-        print("Correct(%): %s" % correct/total*100.0)
+        print("Correct (perc.): %s" % (correct/total*100.0))
