@@ -257,3 +257,24 @@ class Phoneset(ttslab.phoneset.Phoneset):
 
 class Voice(SothoVoice): #orthography of Sotho-Tswana languages...
     pass
+
+
+####################################################################################################
+####################################################################################################
+## "New" NTTS Voice implementation
+###################################
+from ttslab.lang.default import DefaultVoice
+import tswana_newntts as newntts
+
+VALID_GRAPHS = set("abcdeêfghijklmnoôpqrsštuvwxyz'") #specify only lowercase NFC -- used for pronunciation/language determination
+
+class NewNTTSVoice(DefaultVoice):
+    pass
+
+#const data
+NewNTTSVoice.VALID_GRAPHS = VALID_GRAPHS
+#funcs
+
+#uttprocs
+NewNTTSVoice.standardize_text = newntts.standardise_text
+NewNTTSVoice.gpostag_words = newntts.simple_postag_words
