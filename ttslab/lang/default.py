@@ -518,6 +518,7 @@ def phrasify_segments(owner, utt, args):
             pause_item["name"] = silphone
         except AttributeError:
             print("WARNING: Could not find last segment in phrase...")
+            print(utt)
             #raise ttslab.SynthesisError("Could not find last segment in phrase...")
     return utt
 

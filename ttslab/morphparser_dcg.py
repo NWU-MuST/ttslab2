@@ -317,7 +317,11 @@ class Morphparse_DCG(morphparser.Morphparse):
             if "}" in p and not "{" in p:
                 p = p.replace("}", "")
             parses[i] = p
-        return list(sorted(set(parses)))
+        #sort by "max outside":
+        parses = list(set(parses))
+        re_outside = re.compile("{.+?}")
+        parses.sort(key=lambda x: len(re_outside.sub("", x)), reverse=True)
+        return parses
             
 
 def simpbounds(parse, bounds):
@@ -365,6 +369,6 @@ if __name__ == "__main__":
     morphparse = morphparser_dcg.Morphparse_DCG(dcg, descr)
 
     if args.dumpmodel:
-        print(pickle.dumps(morphparse))
+        print(pickle.dumps(morphparse, protocol=2))
     else:
         print("WARNING: Model not dumped, use --dumpmodel", file=sys.stderr)
