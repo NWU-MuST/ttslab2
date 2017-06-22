@@ -1,48 +1,54 @@
-TTSlab
-======
+TTSLab toolkit
+==============
 
-TTSlab is a toolkit intended for text-to-speech research and prototype
-development.
+TTSLab is a toolkit intended for text-to-speech (TTS) research and prototype development. __For a installation instructions refer to `./INSTALL.md`.__
 
-Dependencies:
--------------
+Software dependencies:
+----------------------
 
-Python modules:
- - dateutil
- - numpy
- - scipy
- - sklearn
- - sequitur (G2P)
- - scikits-audiolab (optional)
+Most non-optional dependencies can be installed directly from the standard repositories on Ubuntu Linux. See `./INSTALL.md` on how to install dependencies on Ubuntu Linux.
 
-Other:
- - OpenFST 1.5.0 or higher with Python bindings (optional)
+Python modules/bindings:
+ - [dateutil][1]
+ - [numpy][2]
+ - [scipy][3]
+ - [cffi][4]
+ - [sklearn][5] (version 0.17)
+ - [Sequitur G2P][6] 
+ - [pyicu][7]
+ - [scikits-audiolab][8] (optional)
+ - [OpenFST 1.5.0][9] or higher with Python bindings (optional)
 
 Build tools:
- - cmake
- - cython
- - gcc
+ - [cmake][10]
+ - [cython][11]
+ - [gcc][12]
 
 Recommended:
- - ipython
- - matplotlib
+ - [ipython][13]
+ - [matplotlib][14]
 
-Quickstart:
------------
 
- 1. Clone this source repository to location `$TTSLAB_SOURCE_ROOT`.
- 2. Build the HTS engine by running `build.sh` from within `$TTSLAB_SOURCE_ROOT/hts_engine`.
- 3. Build the RELP synthesizer for unit selection voices if necessary by running `compile_relp.sh` from `$TTSLAB_SOURCE_ROOT/ttslab/synthesizers`
- 4. Add `$TTSLAB_SOURCE_ROOT` to the `$PYTHONPATH`
- 5. Download a voice (e.g. _Lwazi2 Afrikaans_ from the [NTTS Project](https://github.com/NWU-MuST/ntts))
- 6. Load and use the downloaded voice (e.g. "voice.pickle") using IPython as follows:
+Bundled software by third parties:
+----------------------------------
 
-```python
-import ttslab
-v = ttslab.fromfile("voice.pickle")
-u = v.synthesize(u"Toets, 1, 2, 3.")
-#save the waveform:
-u["waveform"].write("sample.wav")
-#play the waveform (if scikits.audiolab has been installed):
-u["waveform"].play()
-```
+ - A modified version of the [HTS engine][15] version 1.09 (see `hts_engine/README`, `hts_engine/COPYING` and individual source files for more information)
+ - POS tagging module (see copyright and authorship information in `ttslab/postagger.py` and `ttslab/postagger_perceptron.py`)
+
+
+------------------------------------------------------------
+[1]: https://pypi.python.org/pypi/python-dateutil
+[2]: https://pypi.python.org/pypi/numpy/1.13.0
+[3]: https://pypi.python.org/pypi/scipy/0.19.0
+[4]: https://pypi.python.org/pypi/cffi/1.10.0
+[5]: https://pypi.python.org/pypi/scikit-learn/0.17
+[6]: https://www-i6.informatik.rwth-aachen.de/web/Software/g2p-r1668-r3.tar.gz
+[7]: https://pypi.python.org/pypi/PyICU/1.9.7
+[8]: https://pypi.python.org/pypi/scikits.audiolab/0.11.0
+[9]: http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-1.5.0.tar.gz
+[10]: https://cmake.org/
+[11]: http://cython.org/
+[12]: https://gcc.gnu.org/
+[13]: https://pypi.python.org/pypi/ipython/6.1.0
+[14]: https://pypi.python.org/pypi/matplotlib/2.0.2
+[15]: http://hts-engine.sourceforge.net/
