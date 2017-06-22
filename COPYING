@@ -1,9 +1,0 @@
-This is a collection of software available under the MIT-licence (see
-LICENCE) at:
-
-https://github.com/demitasse/ttslab2
-
-Source code originating elsewhere:
-
- - Modified HTS engine (see `hts_engine/README` and `hts_engine/COPYING` for more information)
- - POS tagging module (see copyright and authorship information in `ttslab/postagger.py` and `ttslab/postagger_perceptron.py`)
