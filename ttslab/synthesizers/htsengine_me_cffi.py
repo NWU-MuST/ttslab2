@@ -14,7 +14,7 @@ __email__ = "dvn.demitasse@gmail.com"
 
 import os
 import locale
-locale.setlocale(locale.LC_NUMERIC, ("C", "UTF-8")) #for C atof calls to recognize "." as floating point
+locale.setlocale(locale.LC_NUMERIC, "C.UTF-8") #for C atof calls to recognize "." as floating point
 import cffi #from cffi import FFI
 
 # setup FFI and library module-globally
