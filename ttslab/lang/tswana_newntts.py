@@ -15,7 +15,7 @@ import unicodedata
 
 from ttslab.lang.default import remove_control_characters
 
-FOREIGN_RE = re.compile("(\|.+?\\b)", re.UNICODE)
+FOREIGN_RE = re.compile("(\|.+?)(?:[\\s]|$])", re.UNICODE)
 
 def standardise_text(owner, utt, args=None):
     """Various simple tests and transformations to ensure we are working
@@ -28,6 +28,7 @@ def standardise_text(owner, utt, args=None):
     if punct_transtable:
         text = text.translate(punct_transtable) #normalise some pesky punctuation characters
     ### APPLY SETSWANA DIACRITISER:
+    ### This currently strips any existing diacritics before starting -- may want to leave in place in future?
     text = unicodedata.normalize("NFC", text)
     text = owner.diacritiser(text)
     ### HACK: Revert possible diacritics for foreign-lang marked-up tokens:
