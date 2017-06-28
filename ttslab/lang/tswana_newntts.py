@@ -15,7 +15,7 @@ import unicodedata
 
 from ttslab.lang.default import remove_control_characters
 
-FOREIGN_RE = re.compile("(\|.+?)(?:[\\s]|$])", re.UNICODE)
+FOREIGN_RE = re.compile("(\|.+?)(?:[\\s]|$)", re.UNICODE)
 
 def standardise_text(owner, utt, args=None):
     """Various simple tests and transformations to ensure we are working
