@@ -3,6 +3,10 @@
 """
     Provides Track methods to extract features from wavefiles using
     Praat...and manipulate 1-d tracks...
+
+    Note: You need to have the command-line-only version of Praat
+    installed... i.e. to run scripts the binary is called:
+    `praat --run <SCRIPT>`
 """
 from __future__ import unicode_literals, division, print_function #Py2
 
@@ -139,6 +143,7 @@ def get_formants(track, wavfilelocation, numformants=DEF_NUMFORMANTS, timestep=D
     tempfh.flush()
 
     p = subprocess.Popen([PRAAT_BIN,
+                          "--run",
                           tempfh.name,
                           wavfilelocation],
                          stdout=subprocess.PIPE)
@@ -207,6 +212,7 @@ def get_f0(track, wavfilelocation, minpitch=DEF_MINPITCH, maxpitch=DEF_MAXPITCH,
     tempfh.flush()
 
     p = subprocess.Popen([PRAAT_BIN,
+                          "--run",
                           tempfh.name,
                           wavfilelocation],
                          stdout=subprocess.PIPE)
@@ -265,6 +271,7 @@ def get_intensity(track, wavfilelocation, timestep=DEF_TIMESTEP, minpitch=DEF_IN
     tempfh.flush()
 
     p = subprocess.Popen([PRAAT_BIN,
+                          "--run",
                           tempfh.name,
                           wavfilelocation],
                          stdout=subprocess.PIPE)
