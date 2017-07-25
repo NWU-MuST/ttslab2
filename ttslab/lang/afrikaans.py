@@ -58,6 +58,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                        "əi"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
                        "a"      : set(["class_sonorant", "class_syllabic", "vowel", "duration_short", "height_low", "position_back"]),
                        "ai"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
+                       "aʊ"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
                        "ɛ"      : set(["class_sonorant", "class_syllabic", "vowel", "duration_short", "height_mid", "position_front"]),
                        "œ"      : set(["class_sonorant", "class_syllabic", "vowel", "duration_short", "height_mid", "position_front", "articulation_rounded"]),
                        "əu"     : set(["class_sonorant", "class_syllabic", "vowel", "duration_diphthong"]),
@@ -109,6 +110,7 @@ class Phoneset(ttslab.phoneset.Phoneset):
                     "əi":"qi",     #wyn
                     "a":"a",       #man
                     "ai":"ai",     #katjie
+                    "aʊ":"aU",     #Mauser/Gauteng
                     "ɛ":"E",       #ken
                     "œ":"qoeq",    #mus
                     "əu":"qu",     #bou
