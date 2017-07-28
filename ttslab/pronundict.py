@@ -22,54 +22,41 @@ __email__ = "dvn.demitasse@gmail.com"
 
 import sys
 import codecs
-
-#Special character not allowed in dictionary
-SEP = "*"
+from collections import defaultdict
 
 class PronunciationDictionary(object):
     """Basic implementation...
     """
-    def __init__(self, prond=None, sylld=None, toned=None):
+    def __init__(self, prond=None):
         if prond:
             self.prond = prond
         else:
             self.prond = {}
-        if sylld:
-            self.sylld = sylld
-        else:
-            self.sylld = {}
-        if toned:
-            self.toned = toned
-        else:
-            self.toned = {}
 
     def __iter__(self):
-        l = sorted(set([entry.split(SEP)[0] for entry in self.prond]))
-        return l.__iter__()
+        return self.prond.__iter__()
 
     def __contains__(self, word):
         """Simpler, without possibility to consider POS, but sometimes
            convenient and maintaining compatibility...
         """
-        return self.contains(word)
-
-    def contains(self, word, pos=None):
-        if pos:
-            return SEP.join(word, pos) in self.prond
         return word in self.prond
+
+    def contains(self, word, tag=None):
+        return tag in self.prond[word]
 
     def __check_consistency(self):
         """Assert that all info is consistent"""
         try:
-            for k in sorted(self.prond):
-                if k in self.sylld:
-                    assert sum(map(int, list(self.sylld[k]))) == len(self.prond[k].split())
-            for k in sorted(self.sylld):
-                assert k in self.prond
-                if k in self.toned:
-                    assert len(self.toned[k]) == len(self.sylld[k])
+            for word in self.prond:
+                for tag in self.prond[word]:
+                    _pron, _tone, _syll = self.prond[word][tag]
+                    if _syll:
+                        assert sum(map(int, _syll)) == len(_pron.split())
+                    if _tone:
+                        assert len(_tone) == len(_syll)
         except Exception as e:
-            print("OFFENDING ENTRY:", k.encode("utf-8"), file=sys.stderr)
+            print("OFFENDING ENTRY:", word.encode("utf-8"), file=sys.stderr)
             raise
 
     def check_against_phoneset(self, phset):
@@ -78,134 +65,142 @@ class PronunciationDictionary(object):
         """
         phset = set(phset)
         dphset = set()
-        for k in self.prond:
-            dphset.update(self.prond[k].split())
+        for word in self.prond:
+            for tag in self.prond[word]:
+                dphset.update(self.prond[word][tag].split())
         uset = dphset.union(phset)
         assert uset == phset
 
+    def lookup(self, word, tag=None):
+        try:
+            return self.prond[word][tag]
+        except KeyError:
+            return None
+
     def pron_lookup(self, word, tag=None):
-        if tag:
-            k = SEP.join([word, tag])
-        else:
-            k = word
-        if k in self.prond:
-            return self.prond[k].split()
-        return None
+        try:
+            return self.prond[word][tag][0].split()
+        except KeyError:
+            return None
+
+    def _flatphones2nestedsyl(self, phones, sylspec):
+        sylls = []
+        c = 0
+        for l in map(int, sylspec):
+            sylls.append(phones[c:c+l])
+            c += l
+        return sylls
         
     def syll_lookup(self, word, tag=None):
-        _pron = self.pron_lookup(word, tag)
-        if tag:
-            k = SEP.join([word, tag])
-        else:
-            k = word
-        if k in self.sylld:
-            _syll = []
-            c = 0
-            for l in map(int, list(self.sylld[k])):
-                _syll.append(_pron[c:c+l])  #_pron is not None
-                c += l
-            return _syll
-        return None
+        try:
+            _pron, _tone, _syll = self.lookup(word, tag)
+        except TypeError:
+            return None
+        return self._flatphones2nestedsyl(_pron.split(), _syll)
 
     def tone_lookup(self, word, tag=None):
-        if tag:
-            k = SEP.join([word, tag])
-        else:
-            k = word
-        if k in self.toned:
-            return self.toned[k]
-        return None
+        try:
+            _pron, _tone, _syll = self.lookup(word, tag)
+        except TypeError:
+            return None
+        return _tone
 
-    def toscmfile(self, fn, phonemap=None):
-        with codecs.open(fn, "w", encoding="utf-8") as outfh:
-            for k in sorted(self.prond):
-                if SEP in k:
-                    word, tag = k.split(SEP)
+    def _to_writeable_entries(self):
+        entries = []
+        for word in sorted(self.prond):
+            wordentries = []
+            writedefault = True
+            for tag in [t for t in self.prond[word] if t is not None]:
+                if self.prond[word][tag] == self.prond[word][None]:
+                    wordentries.insert(0, [word, tag] + self.prond[word][tag])
+                    writedefault = False
                 else:
-                    word, tag = (k, None)
-                sylls = self.syll_lookup(word, tag)
-                if sylls:
-                    tones = self.tone_lookup(word, tag)
-                    if not tones:
+                    wordentries.append([word, tag] + self.prond[word][tag])
+            if writedefault:
+                wordentries.append([word, None] + self.prond[word][None])
+            entries.extend(wordentries)
+        return entries
+    
+    def toscmfile(self, fn, phonemap=None):
+        entries = self._to_writeable_entries()
+        with codecs.open(fn, "w", encoding="utf-8") as outfh:
+            for word, tag, pron, tone, syll in entries:
+                if syll is not None:
+                    sylls = self._flatphones2nestedsyl(pron.split(), syll)
+                    if tone is None:
                         tones = [0] * len(sylls)
+                    else:
+                        tones = tone
                     if phonemap:
                         prontext = " ".join(["((%s) %s)" % (" ".join([phonemap[p] for p in syl]), tone) for syl, tone in zip(sylls, tones)])
                     else:
                         prontext = " ".join(["((%s) %s)" % (" ".join(syl), tone) for syl, tone in zip(sylls, tones)])
                 else:
                     if phonemap:
-                        prontext = " ".join([phonemap[p] for p in self.prond[word].split()])
+                        prontext = " ".join([phonemap[p] for p in pron.split()])
                     else:
-                        prontext = self.prond[k]
+                        prontext = pron
                 text = '("%s" %s (%s))\n' % (word, tag, prontext)
                 outfh.write(text)
 
     def totextfile(self, fn, phonemap=None):
+        entries = self._to_writeable_entries()
         with codecs.open(fn, "w", encoding="utf-8") as outfh:
-            for k in sorted(self.prond):
-                if SEP in k:
-                    word, tag = k.split(SEP)
-                else:
-                    word, tag = (k, None)
-                if k in self.sylld:
-                    syls = self.sylld[k]
-                else:
-                    syls = None
-                if k in self.toned:
-                    tones = self.toned[k]
-                else:
-                    tones = None
+            for word, tag, pron, tone, syll in entries:
                 if phonemap:
-                    phones = " ".join([phonemap[p] for p in self.pron_lookup(word, tag)])
+                    pron = " ".join([phonemap[p] for p in pron.split()])
                 else:
-                    phones = self.prond[k]
-                outfh.write(" ".join([word, str(tag), str(tones), str(syls), phones]) + "\n")
+                    pron = pron
+                outfh.write(" ".join([word, str(tag), str(tone), str(syll), pron]) + "\n")
 
     def fromsimpletextfile(self, fn, phonemap=None):
         """ abandon q b a n d q n
         """
+        prond = defaultdict(dict)
         with codecs.open(fn, encoding="utf-8") as infh:
             for line in infh:
                 fields = line.split()
                 word = fields[0]
-                if SEP in word:
-                    raise Exception("Asterisk character (*) not allowed in word: " + word)
                 phones = fields[1:]
                 if phonemap:
                     phones = [phonemap[p] for p in phones]
-                self.prond[word] = " ".join(phones)
+                prond[word][None] = [" ".join(phones), None, None]
+        self.prond = dict(prond)
         return self
 
     def updatefromsimpledict(self, d):
         for k in d:
+            if not k in self.prond:
+                self.prond[k] = {}
             if type(d[k]) is list:
-                self.prond[k] = " ".join(d[k])
+                self.prond[k][None] = [" ".join(d[k]), None, None]
             else:
-                self.prond[k] = " ".join(d[k].split())
+                self.prond[k][None] = [" ".join(d[k].split()), None, None]
 
     def fromtextfile(self, fn, phonemap=None, nonestring="None"):
         """ abandon VERB 010 133 q b a n d q n
         """
+        prond = defaultdict(dict)
         with codecs.open(fn, encoding="utf-8") as infh:
             for line in infh:
                 fields = line.split()
                 word = fields[0]
-                if SEP in word:
-                    raise Exception("Asterisk character (*) not allowed in word: " + word)
                 tag = fields[1]
                 tones = fields[2]
+                if tones == nonestring:
+                    tones = None
                 sylls = fields[3]
+                if sylls == nonestring:
+                    sylls = None
                 phones = fields[4:]
-                if tag == nonestring:
-                    k = word
-                else:
-                    k = SEP.join([word, tag])
-                if tones != nonestring:
-                    self.toned[k] = tones
-                if sylls != nonestring:
-                    self.sylld[k] = sylls
                 if phonemap:
                     phones = [phonemap[p] for p in phones]
-                self.prond[k] = " ".join(phones)
+                if tag != nonestring:
+                    prond[word][tag] = [" ".join(phones), tones, sylls]
+                    if None not in prond[word]: #First tagged word will be retained as entry for "None" if no explicit untagged
+                        prond[word][None] = prond[word][tag]
+                else:
+                    prond[word][None] = [" ".join(phones), tones, sylls]
+        self.prond = dict(prond)
         self.__check_consistency()
         return self
