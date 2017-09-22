@@ -43,7 +43,11 @@ class PronunciationDictionary(object):
         return word in self.prond
 
     def contains(self, word, tag=None):
-        return tag in self.prond[word]
+        if word in self.prond:
+            if tag is not None:
+                return tag in self.prond[word]
+            return True
+        return False
 
     def __check_consistency(self):
         """Assert that all info is consistent"""
@@ -96,7 +100,10 @@ class PronunciationDictionary(object):
             _pron, _tone, _syll = self.lookup(word, tag)
         except TypeError:
             return None
-        return self._flatphones2nestedsyl(_pron.split(), _syll)
+        if _syll is not None:
+            return self._flatphones2nestedsyl(_pron.split(), _syll)
+        else:
+            return None
 
     def tone_lookup(self, word, tag=None):
         try:

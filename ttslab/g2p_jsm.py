@@ -26,11 +26,16 @@ class G2P_JSM(g2p.G2P):
         self.translator = Translator(self.model)
 
     def predict_word(self, word):
-        if self.gmap is not None:
-            phones = self.translator(word.translate(self.gmap))
-        else:
-            phones = self.translator(word)
-        return phones
+        try:
+            if self.gmap is not None:
+                phones = self.translator(word.translate(self.gmap))
+            else:
+                phones = self.translator(word)
+            return phones
+        except:
+            print("FATAL:", word.encode("utf-8"))
+            raise
+
 
 if __name__ == "__main__":
     import sys, codecs, argparse, pickle
