@@ -356,7 +356,7 @@ if __name__ == "__main__":
 
 ####################################################################################################
 ####################################################################################################
-## "New" NTTS Voice implementation
+## "New" NTTS Voice implementations
 ###################################
 import zulu_newntts as newntts
 
@@ -370,3 +370,98 @@ class NewNTTSVoice(Voice):
 #uttprocs
 NewNTTSVoice.normalize_tokens = newntts.normalize_tokens
 NewNTTSVoice.gpostag_words = lambda owner, utt: utt #"No-op" since GPOS will be assigned directly in "newntts.normalize_tokens"
+
+
+###################################
+# This experimental voice piggybacks on the currently unused "accent" feature
+# on syllables to represent whether the syllable is from the "content
+# part" of the word or from a "function part"
+
+class NewNTTS2Voice(Voice):
+    PO = "{"
+    PC = "}"
+    GV = "aeiou"
+    
+    def decomp_words(self, utt, args=None):
+        #run word parse/decomp for non-foreign words and save result
+        #for later processing of syllables
+        #print("DEMIT: decomp_words()")
+        for word in utt.get_relation("Word"):
+            if word["lang"] is None or word["lang"] == "main":
+                try:
+                    parse = self.morphdict[word["name"]]
+                except KeyError:
+                    parse = self.morphparser.parse_word_simple(word["name"])[0]
+                #DEMIT: simple / approximate / conservative
+                #harmonisation of parse with syllable structure:
+                if self.PO in parse:
+                    #print(parse, end="\t")
+                    parse = list(parse)
+                    p = 0
+                    i = 0
+                    while i < len(parse)-1:
+                        if p == 0:
+                            if parse[i] not in self.GV and parse[i+1] == self.PO:
+                                parse.pop(i+1)
+                                parse.insert(i, self.PO)
+                                i = 0
+                                continue
+                            if parse[i] == self.PO:
+                                if parse[-1] == self.PC: #shortcut
+                                    break
+                                p = 1
+                        elif p == 1:
+                            if parse[i+1] == self.PC and parse[i] not in self.GV:
+                                parse[i+1] = parse[i+2]
+                                parse[i+2] = self.PC
+                        i += 1
+                    word["parse"] = "".join(parse)
+                else:
+                    word["parse"] = parse
+                #print(word["parse"])
+        return utt
+
+    def phonetize_words(self, utt, args=None):
+        utt = super(NewNTTS2Voice, self).phonetize_words(utt)
+        #now add "accent" feature to syllables
+        #print("DEMIT: phonetize_words()")
+        pronun_resources = self.pronun["main"]
+        syllabify = pronun_resources["phoneset"].syllabify
+        g2p = pronun_resources["g2p"]
+        for word in utt.gr("SylStructure"):
+            if not "parse" in word:
+                for syl in word.get_daughters():
+                    syl["accent"] = "1"
+            else:
+                if not self.PO in word["parse"]:
+                    for syl in word.get_daughters():
+                        syl["accent"] = "0"
+                else:
+                    prefix = word["parse"].split(self.PO)[0]
+                    if prefix:
+                        prefnumsyls = len(syllabify(g2p.predict_word(prefix)))
+                    else:
+                        prefnumsyls = 0
+                    suffix = word["parse"].split(self.PC)[-1]
+                    if suffix:
+                        suffnumsyls = len(syllabify(g2p.predict_word(suffix)))
+                    else:
+                        suffnumsyls = 0
+                    syls = word.get_daughters()
+                    for s in syls:
+                        s["accent"] = "0"
+                    for s in syls[prefnumsyls:]:
+                        s["accent"] = "1"
+                    if suffnumsyls:
+                        for s in syls[-suffnumsyls:]:
+                            s["accent"] = "0"
+                    #print(word["parse"], prefnumsyls, suffnumsyls, "".join([s["accent"] for s in syls]))
+        return utt
+
+
+#const data
+
+#funcs
+
+#uttprocs
+Voice.tokenize_text = DefaultTokenizer()

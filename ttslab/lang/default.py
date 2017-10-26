@@ -579,8 +579,8 @@ class DefaultVoice(Voice):
             utt = self.normalize_tokens(utt) #also handles simple markup..
             utt = self.gpostag_words(utt)
             utt = self.langclass_words(utt)
-            if hasattr(self, 'decompound_words'):
-                utt = self.decompound_words(utt)
+            if hasattr(self, 'decomp_words'):
+                utt = self.decomp_words(utt)
             utt = self.phrasify_words(utt)
         if processname in ["text-to-segments", "text-to-feats", "text-to-wave"]:
             utt = self.phonetize_words(utt)
