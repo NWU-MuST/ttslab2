@@ -45,7 +45,7 @@ sudo make install
 Clone or download this repository to a location (`$TTSLAB_SOURCE`) e.g.:
 
 ```bash
-git clone https://github.com/demitasse/ttslab2.git
+git clone https://github.com/NWU-MuST/ttslab2.git
 ```
 
 Build the synthesis back-end components as follows:
@@ -81,4 +81,4 @@ u["waveform"].play()
 [1]: https://www-i6.informatik.rwth-aachen.de/web/Software/g2p-r1668-r3.tar.gz
 [2]: https://pypi.python.org/pypi/scikits.audiolab/0.11.0
 [3]: http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-1.5.0.tar.gz
-[4]: https://github.com/demitasse/ttslab2_afr_lwazi2_build
+[4]: https://github.com/NWU-MuST/ttslab2_afr_lwazi2_build
