@@ -27,6 +27,11 @@ DEBUG=False
 DEF_N_TREES = 50
 DEF_CONTEXT_N = 5
 
+#Additional diacritics that should be removed (this is currently the
+#macron (e.g. "ō") that we use to explicitly specify/override
+#diacritic choices in the TTS voice input)
+REMDIACS = ["\u0304"]
+
 def ints2onehot(l, N):
     """0 is reserved for None
     """
@@ -66,7 +71,7 @@ class GraphClassifDiacritiser(diacritise.Diacritiser):
         assert self.n >= 1
         self.vcfeats = bool(vcfeats)
         self.normre = re.compile("[^{}]".format(re.escape("".join(self.graphs))))
-        self.diacre = re.compile("[{}]".format(re.escape("".join(self.diacs))))
+        self.diacre = re.compile("[{}]".format(re.escape("".join(diacs + REMDIACS))))
 
     def _normline(self, line, strip_diacs=False):
         line = line.lower()
