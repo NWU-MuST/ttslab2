@@ -60,7 +60,7 @@ bash compile_relp.sh
 Add `$TTSLAB_SOURCE` to the `$PYTHONPATH` (preferably in `~/.bashrc` or similar bash startup script):
 
 ```bash
-export $PYTHONPATH=$TTSLAB_SOURCE:$PYTHONPATH
+export PYTHONPATH=$TTSLAB_SOURCE:$PYTHONPATH
 ```
 
 ## 3. Build or download a voice and test
